@@ -1,0 +1,87 @@
+﻿using AutoMapper;
+using CORE.MMms.DTOs;
+using CORE.MMms.Entidades;
+using CORE.MMms.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Data;
+
+namespace API.MMms.Controllers
+{
+    [Authorize]
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ServicesGivenController : ControllerBase
+    {
+        private readonly IServicesGiven _context;
+        private readonly IMapper _mapper;
+        public ServicesGivenController(IServicesGiven context, IMapper mapper)
+        {
+                _context= context; 
+            _mapper = mapper;
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> Get()
+        {
+            var MMDS = await _context.GetServicesGiven();
+            return Ok(MMDS);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int Id)
+        {
+            var UWU = await _context.GetxId(Id);
+            if (UWU == null)
+            {
+                return Ok(UWU);
+            }
+            else
+            {
+                var OWO = _mapper.Map<ServiciosDadoDTOs>(UWU);
+                return Ok(OWO);
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Save(ServiciosDadoDTOs dTOs)
+        {
+            var UWU = _mapper.Map<ServiciosDado>(dTOs);
+            await _context.Post(UWU);
+            return Ok(UWU);
+        }
+
+        [HttpPost("CrearFactua")]
+        public async Task<IActionResult> Save(Venta venta)
+        {
+            string respuesta = _context.crearFacturaServiciosProductos(venta);
+            return Ok(venta);
+        }
+
+        [HttpPut("ActualizarFactura/{Id}/{estado}")]
+        public async Task<IActionResult> Actualizar(int Id, bool estado)
+        {
+           bool respuesta = await _context.Update(Id, estado);
+            return Ok(respuesta);
+        }
+
+        [HttpPost("CargarFacturas/{todas}/{cliente}/{usuario}/{fechaInicial}/{fechaFinal}/")]
+        public async Task<IActionResult> cargarFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal)
+        {
+            DataSet resultados = new DataSet();
+
+            resultados = _context.SelectFacturas(todas, cliente, usuario, fechaInicial, fechaFinal);
+            return Ok(resultados);
+        }
+
+        [HttpPost("CargarCompras/{todas}/{proveedor}/{usuario}/{fechaInicial}/{fechaFinal}/")]
+        public async Task<IActionResult> cargarCompras(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal)
+        {
+            DataSet resultados = new DataSet();
+
+            resultados = _context.SelectCompras(todas, proveedor, usuario, fechaInicial, fechaFinal);
+            return Ok(resultados);
+        }
+    }
+}

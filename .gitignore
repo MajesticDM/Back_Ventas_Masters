@@ -1,0 +1,40 @@
+## Build results
+bin/
+obj/
+
+## User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+.vscode/
+
+## Rider
+.idea/
+*.sln.iml
+
+## .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## Logs
+*.log
+
+## OS files
+[Dd]esktop.ini
+Thumbs.db
+
+## Environment variables
+.env
+.env.*
