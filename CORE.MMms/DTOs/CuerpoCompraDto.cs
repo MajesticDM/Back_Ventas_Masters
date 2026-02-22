@@ -21,5 +21,6 @@ public class CuerpoCompraDto
     public decimal? medidaPejase { get; set; }
     public decimal? gramajeProducto { get; set; }
     public decimal? gramajeUnidad { get; set; }
+    public decimal? gramaje_total { get; set; }
 }
 

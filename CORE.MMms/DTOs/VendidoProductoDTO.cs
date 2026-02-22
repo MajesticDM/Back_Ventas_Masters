@@ -12,4 +12,6 @@ public partial class VendidoProductoDTOs
     public decimal? Quantity { get; set; }
 
     public double? TotalCost { get; set; }
+
+    public decimal? gramaje_total { get; set; }
 }

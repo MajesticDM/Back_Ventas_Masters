@@ -71,6 +71,7 @@ namespace INFRA.MMms.Repository
                         command.Parameters.Add("@idx_producto", SqlDbType.Decimal).Value = producto.IdxProducto;
                         command.Parameters.Add("@cantidad", SqlDbType.Decimal).Value = producto.Quantity;
                         command.Parameters.Add("@costo_total", SqlDbType.Decimal).Value = producto.TotalCost;
+                        command.Parameters.Add("@gramaje_total", SqlDbType.Decimal).Value = producto.gramaje_total;
 
                         command.ExecuteNonQuery();
                     }

@@ -114,6 +114,7 @@ namespace INFRA.MMms.Repository
             table.Columns.Add("gramajeUnidad", typeof(decimal));
             table.Columns.Add("tipoMedida", typeof(decimal));
             table.Columns.Add("medidaPejase", typeof(decimal));
+            table.Columns.Add("gramaje_total", typeof(decimal));
             
 
             foreach (var item in items)
@@ -131,7 +132,8 @@ namespace INFRA.MMms.Repository
                     item.gramajeProducto,
                     item.gramajeUnidad,
                     item.tipoMedida,
-                    item.medidaPejase
+                    item.medidaPejase,
+                    item.gramaje_total
                 );
             }
 

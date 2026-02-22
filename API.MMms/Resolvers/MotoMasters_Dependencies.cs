@@ -27,6 +27,7 @@ namespace API.MMms.Resolvers
             services.AddTransient<IPerfiles, PerfilesRepo>();
             services.AddTransient<IGastos, GastosRepo>();
             services.AddTransient<IAbonos, AbonosRepo>();
+            services.AddTransient<ICaja, CajaRepo>();
         }
     }
 }

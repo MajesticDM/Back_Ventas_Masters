@@ -1,4 +1,5 @@
-﻿using CORE.MMms.Entidades;
+﻿using CORE.MMms.DTOs;
+using CORE.MMms.Entidades;
 using CORE.MMms.Interfaces;
 using INFRA.MMms.Data;
 using Microsoft.Data.SqlClient;
@@ -15,9 +16,40 @@ namespace INFRA.MMms.Repository
             _context = context;
         }
 
+        public DataSet getInformeCaja(postUtilidades dto)
+        {
+            return getUtilidades(dto);
+        }
+        public async void abrirCaja(cajaAperturaCierre dto)
+        {
+            AbrirCajaUsuario(dto);
+        }
+        public void cerrarCaja(cajaAperturaCierre dto)
+        {
+            CerrarCajaUsuario(dto.ID_USUARIO);
+        }
 
+        public bool getEstadoCaja(decimal Id)
+        {
+            return EstadoCaja(Id);
+        }
 
-        public async Task<long> AbrirCaja(long idUsuario)
+        public DataSet getVerificarCaja(int id_usuario, int id_caja)
+        {
+            return VerificacionCaja(id_usuario, id_caja);
+        }
+
+        public DataTable getTipoMovimientos()
+        {
+            return GetTipoMovimientos();
+        }
+
+        public async  Task<bool> realizarMovimiento(List<RealizarMovimientosDTO> dto)
+        {
+            return await RealizarMovimientosAsync(dto);
+        }
+
+        private async Task<long> AbrirCajaUsuario(cajaAperturaCierre caja)
         {
             using var connection = new SqlConnection(
                 _context.Database.GetDbConnection().ConnectionString);
@@ -26,7 +58,7 @@ namespace INFRA.MMms.Repository
             command.CommandType = CommandType.StoredProcedure;
 
             command.Parameters.AddWithValue("@OPERACION", "ABRIR_CAJA");
-            command.Parameters.AddWithValue("@ID_USUARIO", idUsuario);
+            command.Parameters.AddWithValue("@ID_USUARIO", caja.ID_USUARIO);
 
             var idCajaParam = new SqlParameter("@ID_CAJA", SqlDbType.Decimal)
             {
@@ -36,7 +68,22 @@ namespace INFRA.MMms.Repository
             };
             command.Parameters.Add(idCajaParam);
 
-            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", CreateEmptyCajaTable());
+            DataTable saldos = new DataTable();
+
+            saldos.Columns.Add("IDX_DENOMINACION", typeof(int));
+
+            saldos.Columns.Add("SALDO", typeof(decimal));
+
+            for (int i = 0; i < caja.saldos.Count; i++)
+            {
+                DataRow row = saldos.NewRow();
+                row["IDX_DENOMINACION"] = caja.saldos[i].IDX_DENOMINACION;
+                row["SALDO"] = caja.saldos[i].SALDO;
+
+                saldos.Rows.Add(row);
+            }
+
+            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", saldos);
             tvpParam.SqlDbType = SqlDbType.Structured;
             tvpParam.TypeName = "CuerpoSaldosCajaTVP";
 
@@ -46,7 +93,7 @@ namespace INFRA.MMms.Repository
             return Convert.ToInt64(idCajaParam.Value);
         }
 
-        public async Task CerrarCaja(long idUsuario, DataTable saldosCierre)
+        private async Task CerrarCajaUsuario(decimal idUsuario)
         {
             using var connection = new SqlConnection(
                 _context.Database.GetDbConnection().ConnectionString);
@@ -65,7 +112,7 @@ namespace INFRA.MMms.Repository
             };
             command.Parameters.Add(idCajaParam);
 
-            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", saldosCierre);
+            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", CreateEmptyCajaTable());
             tvpParam.SqlDbType = SqlDbType.Structured;
             tvpParam.TypeName = "CuerpoSaldosCajaTVP";
 
@@ -73,16 +120,21 @@ namespace INFRA.MMms.Repository
             await command.ExecuteNonQueryAsync();
         }
 
-        public async Task<bool> EstadoCaja(long idUsuario)
+        private bool EstadoCaja(decimal idUsuario)
         {
             using var connection = new SqlConnection(
                 _context.Database.GetDbConnection().ConnectionString);
-            using var command = new SqlCommand("CAJA_ACCIONES", connection);
 
-            command.CommandType = CommandType.StoredProcedure;
+            using var command = new SqlCommand("CAJA_ACCIONES", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
 
-            command.Parameters.AddWithValue("@OPERACION", "ESTADO_CAJA");
-            command.Parameters.AddWithValue("@ID_USUARIO", idUsuario);
+            command.Parameters.Add("@OPERACION", SqlDbType.VarChar, 20)
+                   .Value = "ESTADO_CAJA";
+
+            command.Parameters.Add("@ID_USUARIO", SqlDbType.Decimal)
+                   .Value = idUsuario;
 
             var idCajaParam = new SqlParameter("@ID_CAJA", SqlDbType.Decimal)
             {
@@ -92,74 +144,39 @@ namespace INFRA.MMms.Repository
             };
             command.Parameters.Add(idCajaParam);
 
-            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", CreateEmptyCajaTable());
-            tvpParam.SqlDbType = SqlDbType.Structured;
+            var tvpParam = command.Parameters.Add("@cuerpoSaldosCaja", SqlDbType.Structured);
             tvpParam.TypeName = "CuerpoSaldosCajaTVP";
+            tvpParam.Value = CreateEmptyCajaTable();
 
-            await connection.OpenAsync();
+            connection.Open();
 
-            using var reader = await command.ExecuteReaderAsync();
+            var result = command.ExecuteScalar();
 
-            if (await reader.ReadAsync())
-                return reader.GetInt32(0) == 1;
-
-            return false;
+            return result != null && Convert.ToInt32(result) == 1;
         }
 
-        public async Task VerificacionCaja(long idUsuario)
+        private DataSet VerificacionCaja(decimal usuario, int id_caja)
         {
-            using var connection = new SqlConnection(
-                _context.Database.GetDbConnection().ConnectionString);
-            using var command = new SqlCommand("CAJA_ACCIONES", connection);
+            DataSet result = new DataSet();
 
-            command.CommandType = CommandType.StoredProcedure;
-
-            command.Parameters.AddWithValue("@OPERACION", "VERIFICACION");
-            command.Parameters.AddWithValue("@ID_USUARIO", idUsuario);
-
-            var idCajaParam = new SqlParameter("@ID_CAJA", SqlDbType.Decimal)
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
             {
-                Precision = 18,
-                Scale = 0,
-                Direction = ParameterDirection.Output
-            };
-            command.Parameters.Add(idCajaParam);
+                using (SqlCommand command = new SqlCommand("CAJA_ACCIONES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
 
-            var tvpParam = command.Parameters.AddWithValue("@cuerpoSaldosCaja", CreateEmptyCajaTable());
-            tvpParam.SqlDbType = SqlDbType.Structured;
-            tvpParam.TypeName = "CuerpoSaldosCajaTVP";
+                    command.Parameters.Add("@OPERACION", SqlDbType.VarChar, 100).Value = "VERIFICACION";
+                    command.Parameters.Add("@ID_USUARIO", SqlDbType.Decimal, 190).Value = usuario;
+                    command.Parameters.Add("@ID_CAJA", SqlDbType.Decimal, 190).Value = id_caja == 0 ? null : id_caja;
 
-            await connection.OpenAsync();
 
-            using var reader = await command.ExecuteReaderAsync();
-
-            // Result 1 → Facturas
-            if (await reader.ReadAsync())
-            {
-                var facturas = reader.GetInt32(0);
-                var totalFacturas = reader.GetDecimal(1);
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
             }
 
-            // Siguiente result set
-            await reader.NextResultAsync();
-
-            // Result 2 → Compras
-            if (await reader.ReadAsync())
-            {
-                var compras = reader.GetInt32(0);
-                var totalCompras = reader.GetDecimal(1);
-            }
-
-            await reader.NextResultAsync();
-
-            // Result 3 → Caja en número
-            if (await reader.ReadAsync())
-            {
-                var compras = reader.GetInt32(0);
-                var totalCompras = reader.GetDecimal(1);
-            }
-
-            // Puedes seguir avanzando con NextResultAsync()
+            return result;
         }
 
         private DataTable CreateEmptyCajaTable()
@@ -171,5 +188,90 @@ namespace INFRA.MMms.Repository
         }
 
 
+        private DataTable GetTipoMovimientos()
+        {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_TIPO_MOVIMIENTOS_ACCIONES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@OPERACION", SqlDbType.VarChar, 10).Value = "SELECT";
+                        
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<bool> RealizarMovimientosAsync(List<RealizarMovimientosDTO> dto)
+        {
+            await using var connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString);
+
+            await using var command = new SqlCommand("MOVIMIENTOS_CAJA_ACCIONES", connection);
+
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.AddWithValue("@OPERACION", "INSERTAR");
+
+            DataTable saldos = new DataTable();
+
+            saldos.Columns.Add("IDX_USUARIO", typeof(decimal));
+            saldos.Columns.Add("IDX_DENOMINACION", typeof(decimal));
+            saldos.Columns.Add("IDX_TIPO_MOVIMIENTO", typeof(decimal));
+            saldos.Columns.Add("IDX_GASTO", typeof(decimal));
+            saldos.Columns.Add("VALOR", typeof(decimal));
+            saldos.Columns.Add("DESCRIPCION", typeof(string));
+
+            foreach (var item in dto)
+            {
+                saldos.Rows.Add(
+                    item.IDX_USUARIO,
+                    item.IDX_DENOMINACION,
+                    item.IDX_TIPO_MOVIMIENTO,
+                    item.IDX_GASTO,
+                    item.VALOR,
+                    item.DESCRIPCION
+                );
+            }
+
+            var tvpParam = command.Parameters.AddWithValue("@cuerpoMovimientos", saldos);
+            tvpParam.SqlDbType = SqlDbType.Structured;
+            tvpParam.TypeName = "CuerpoMovimientosCajaTVP";
+
+            await connection.OpenAsync();
+            var rowsAffected = await command.ExecuteNonQueryAsync();
+
+            return rowsAffected > 0;
+        }
+
+        private DataSet getUtilidades(postUtilidades fechas)    
+        {
+            DataSet result = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_UTILIDADES_ACCIONES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@fecha_inicial", SqlDbType.DateTime).Value = fechas.fecha_inicial;
+                    command.Parameters.Add("@fecha_final", SqlDbType.DateTime).Value = fechas.fecha_final;
+
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
     }
 }

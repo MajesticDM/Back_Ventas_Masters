@@ -101,6 +101,9 @@ namespace INFRA.MMms.Repository
                     if (dto.gramaje.HasValue)
                         command.Parameters.Add("@gramaje", SqlDbType.Decimal).Value = dto.gramaje.Value;
 
+                    if (dto.gramaje.HasValue)
+                        command.Parameters.Add("@GRAMAJE_DEL_PRODUCTO", SqlDbType.Decimal).Value = dto.gramajE_DEL_PRODUCTO.Value;
+
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(result);
                 }
