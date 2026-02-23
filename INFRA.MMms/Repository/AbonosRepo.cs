@@ -16,7 +16,7 @@ namespace INFRA.MMms.Repository
             _context = context;
         }
 
-        
+
 
         #region Abonos ventas
 
@@ -108,7 +108,7 @@ namespace INFRA.MMms.Repository
 
         public DataTable getCompras(GetAbonosDto getAbonos)
         {
-            return AbonosComprasAcciones(new AbonoComprasDto { idx_proveedor = getAbonos.idx_proveedor, fecha_inicial = getAbonos.fecha_inicial, fecha_final = getAbonos.fecha_final}, "COMPRAS");
+            return AbonosComprasAcciones(new AbonoComprasDto { idx_proveedor = getAbonos.idx_proveedor, fecha_inicial = getAbonos.fecha_inicial, fecha_final = getAbonos.fecha_final }, "COMPRAS");
         }
 
         public DataTable postAbonosCompra(AbonoComprasDto abonoCompraDto)
@@ -165,7 +165,64 @@ namespace INFRA.MMms.Repository
             return result;
         }
 
+        public DataTable InformeAbonosVentas(AbonosInformesDTO informe)
+        {
+            return InformeAbonosClientes(informe);
+        }
+
+        public DataTable InformeAbonosCompras(AbonosInformesDTO informe)
+        {
+            return InformeAbonosProveedores(informe);
+        }
+
 
         #endregion
+
+        private DataTable InformeAbonosClientes(AbonosInformesDTO informe)
+        {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_INFORME_ABONOS_CLIENTES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@FECHA_INICIAL", SqlDbType.DateTime).Value = informe.fecha_inicial;
+                    command.Parameters.Add("@FECHA_FINAL", SqlDbType.DateTime).Value = informe.fecha_final;
+                    command.Parameters.Add("@IDX_CLIENTE", SqlDbType.Decimal).Value = informe.idx_cliente;
+                    command.Parameters.Add("@IDX_PROVEEDOR", SqlDbType.Decimal).Value = 0;
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        private DataTable InformeAbonosProveedores(AbonosInformesDTO informe)
+        {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_INFORME_ABONOS_PROVEEDORES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@FECHA_INICIAL", SqlDbType.DateTime).Value = informe.fecha_inicial;
+                    command.Parameters.Add("@FECHA_FINAL", SqlDbType.DateTime).Value = informe.fecha_final;
+                    command.Parameters.Add("@IDX_CLIENTE", SqlDbType.Decimal).Value = 0;
+                    command.Parameters.Add("@IDX_PROVEEDOR", SqlDbType.Decimal).Value = informe.idx_proveedor;
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
     }
 }

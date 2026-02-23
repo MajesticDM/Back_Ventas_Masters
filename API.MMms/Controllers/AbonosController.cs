@@ -45,6 +45,14 @@ namespace API.MMms.Controllers
             return Ok(MMD);
         }
 
+        [HttpPost("InformeAbonosVentas")]
+        public async Task<IActionResult> InformeAbonosVentas([FromBody] AbonosInformesDTO abonosDto)
+        {
+            var MMD = _context.InformeAbonosVentas(abonosDto);
+            return Ok(MMD);
+        }
+
+
         #endregion
 
         #region Compras
@@ -71,6 +79,12 @@ namespace API.MMms.Controllers
             return Ok(MMD);
         }
 
+        [HttpPost("InformeAbonosCompras")]
+        public async Task<IActionResult> InformeAbonosCompras([FromBody] AbonosInformesDTO abonosDto)
+        {
+            var MMD = _context.InformeAbonosCompras(abonosDto);
+            return Ok(MMD);
+        }
         #endregion
     }
 }
