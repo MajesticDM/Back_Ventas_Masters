@@ -28,6 +28,7 @@ namespace API.MMms.Resolvers
             services.AddTransient<IGastos, GastosRepo>();
             services.AddTransient<IAbonos, AbonosRepo>();
             services.AddTransient<ICaja, CajaRepo>();
+            services.AddTransient<IReportes, ReportesRepo>();
         }
     }
 }
