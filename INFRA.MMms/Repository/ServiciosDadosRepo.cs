@@ -77,6 +77,27 @@ namespace INFRA.MMms.Repository
                     }
                 }
 
+                foreach (var servicio in dto.servicios)
+                {
+                    using (SqlCommand command = new SqlCommand("SP_INSERT_SERVICES_GIVEN_PRODUCTS_SOLD", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add("@SERVICEID", SqlDbType.Decimal).Value = servicio.idxServicio;
+                        command.Parameters.Add("@INVOICEID", SqlDbType.Decimal).Value = idFactura;
+                        command.Parameters.Add("@CLIENTELEFTKEYS", SqlDbType.Bit).Value = servicio.ClienteDejoLlaves;
+                        command.Parameters.Add("@KEYAPPEARANCE", SqlDbType.VarChar, 100).Value = servicio.DescripcionLlaves;
+                        command.Parameters.Add("@DIFERENTVEHICLE", SqlDbType.Bit).Value = !servicio.BitVehiculoInicial;
+                        command.Parameters.Add("@VEHICLEPATE", SqlDbType.VarChar,100).Value = servicio.PlacaVehiculo;
+                        command.Parameters.Add("@VEHICLECOLOR", SqlDbType.VarChar, 100).Value = servicio.ColorVehiculo;
+                        command.Parameters.Add("@VEHICLEBRAND", SqlDbType.VarChar, 100).Value = servicio.MarcaVehiculo;
+                        command.Parameters.Add("@ADIOTIONALCOST", SqlDbType.Decimal).Value = servicio.CostoAdicional;
+                        command.Parameters.Add("@COST", SqlDbType.Decimal).Value = servicio.totalCost;
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+
                 using (SqlCommand command = new SqlCommand("SP_FACTURAS_ACCIONES", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;
