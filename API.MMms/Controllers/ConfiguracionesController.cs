@@ -21,6 +21,12 @@ namespace API.MMms.Controllers
             _mapper = mapper;
         }
 
+        [HttpGet("Configuracion/consultar")]
+        public IActionResult GetConfiguracionGeneral()
+        {
+            return Ok(_context.SeleccionarConfiguracionGeneral());
+        }
+
         [HttpGet("Notificaciones/mostrar")]
         public async Task<IActionResult> consultarNotificaciones()
         {

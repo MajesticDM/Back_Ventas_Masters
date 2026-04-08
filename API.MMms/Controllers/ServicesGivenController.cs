@@ -55,8 +55,8 @@ namespace API.MMms.Controllers
         [HttpPost("CrearFactua")]
         public async Task<IActionResult> Save(Venta venta)
         {
-            string respuesta = _context.crearFacturaServiciosProductos(venta);
-            return Ok(venta);
+            string idFactura = _context.crearFacturaServiciosProductos(venta);
+            return Ok(new { id_factura = idFactura });
         }
 
         [HttpPut("ActualizarFactura/{Id}/{estado}")]

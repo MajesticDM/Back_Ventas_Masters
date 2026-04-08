@@ -183,5 +183,99 @@ namespace INFRA.MMms.Repository
 
             return result;
         }
+
+        // ----------------------------------------------------------------
+        // SP_DETALLE_FACTURA — recibo de venta (cabecera + lineas)
+        // ----------------------------------------------------------------
+        public DataSet GetDetalleFactura(decimal idFactura)
+        {
+            DataSet result = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_DETALLE_FACTURA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@id_factura", SqlDbType.Decimal).Value = idFactura;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        // ----------------------------------------------------------------
+        // SP_ULTIMO_ABONO_FACTURA — ID del abono mas reciente
+        // ----------------------------------------------------------------
+        public decimal GetUltimoAbonoFactura(decimal idxFactura, decimal idxUsuario)
+        {
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_ULTIMO_ABONO_FACTURA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@idx_factura", SqlDbType.Decimal).Value = idxFactura;
+                    command.Parameters.Add("@idx_usuario", SqlDbType.Decimal).Value = idxUsuario;
+
+                    connection.Open();
+                    object result = command.ExecuteScalar();
+                    return result != null ? Convert.ToDecimal(result) : 0;
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // SP_DETALLE_ABONO_VENTA — comprobante de abono
+        // ----------------------------------------------------------------
+        public DataTable GetDetalleAbono(decimal idDetalle)
+        {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_DETALLE_ABONO_VENTA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@id_detalle", SqlDbType.Decimal).Value = idDetalle;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        // ----------------------------------------------------------------
+        // SP_BALANCE_DIARIO_IMPRIMIBLE
+        // @fecha_inicio / @fecha_fin — rango libre
+        // Retorna 5 result sets: ventas, compras, gastos, abonos ventas, abonos compras
+        // ----------------------------------------------------------------
+        public DataSet GetBalanceDiario(DateTime fechaInicio, DateTime fechaFin)
+        {
+            DataSet result = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_BALANCE_DIARIO_IMPRIMIBLE", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@fecha_inicio", SqlDbType.DateTime).Value = fechaInicio;
+                    command.Parameters.Add("@fecha_fin",    SqlDbType.DateTime).Value = fechaFin;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
     }
 }

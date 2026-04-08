@@ -24,5 +24,17 @@ namespace CORE.MMms.Interfaces
 
         // Margen real por producto basado en utilidad congelada al momento de venta
         DataTable GetMargenReal();
+
+        // Balance diario imprimible: ventas, compras, gastos, abonos ventas, abonos compras
+        DataSet GetBalanceDiario(DateTime fechaInicio, DateTime fechaFin);
+
+        // Recibo de venta: cabecera + lineas de productos
+        DataSet GetDetalleFactura(decimal idFactura);
+
+        // ID del abono mas reciente para una factura (para imprimir comprobante)
+        decimal GetUltimoAbonoFactura(decimal idxFactura, decimal idxUsuario);
+
+        // Detalle completo de un abono para imprimir el comprobante
+        DataTable GetDetalleAbono(decimal idDetalle);
     }
 }
