@@ -21,7 +21,7 @@ namespace INFRA.MMms.Repository
 
             using (SqlConnection connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
             {
-                using (SqlCommand command = new SqlCommand("SP_CARGADO_CONFIGURACION_GENERAL", connection))
+                using (SqlCommand command = new SqlCommand("SP_MODIFICACION_NOTIFICACIONES_CONFIGURACION", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;
 
@@ -37,7 +37,7 @@ namespace INFRA.MMms.Repository
 
             using (SqlConnection connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
             {
-                using (SqlCommand command = new SqlCommand("SP_MODIFICACION_NOTIFICACIONES_CONFIGURACION", connection))
+                using (SqlCommand command = new SqlCommand("SP_CARGADO_CONFIGURACION_GENERAL", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;
 
