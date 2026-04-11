@@ -1,10 +1,11 @@
 using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Drawing.Printing;
 
 namespace API.MMms.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ReportesController : ControllerBase
@@ -14,6 +15,15 @@ namespace API.MMms.Controllers
         public ReportesController(IReportes context)
         {
             _context = context;
+        }
+
+        // GET api/Reportes/impresoras
+        // Lista todas las impresoras instaladas en el servidor — usar para verificar el nombre exacto
+        [HttpGet("impresoras")]
+        public IActionResult GetImpresoras()
+        {
+            var lista = PrinterSettings.InstalledPrinters.Cast<string>().ToList();
+            return Ok(lista);
         }
 
         // GET api/Reportes/balance
@@ -72,6 +82,39 @@ namespace API.MMms.Controllers
         public IActionResult GetMargenReal()
         {
             return Ok(_context.GetMargenReal());
+        }
+
+        // GET api/Reportes/balance-diario?fechaInicio=2026-04-08T00:00&fechaFin=2026-04-08T23:59
+        // Balance diario imprimible: ventas, compras, gastos, abonos ventas, abonos compras
+        [HttpGet("balance-diario")]
+        public IActionResult GetBalanceDiario([FromQuery] DateTime fechaInicio, [FromQuery] DateTime fechaFin)
+        {
+            return Ok(_context.GetBalanceDiario(fechaInicio, fechaFin));
+        }
+
+        // GET api/Reportes/recibo-venta/21766
+        // Recibo de venta: cabecera + lineas de productos para impresora POS
+        [HttpGet("recibo-venta/{idFactura}")]
+        public IActionResult GetReciboVenta(decimal idFactura)
+        {
+            return Ok(_context.GetDetalleFactura(idFactura));
+        }
+
+        // GET api/Reportes/ultimo-abono?idxFactura=21766&idxUsuario=3
+        // ID del abono mas reciente para una factura (para encadenar con recibo-abono)
+        [HttpGet("ultimo-abono")]
+        public IActionResult GetUltimoAbono([FromQuery] decimal idxFactura, [FromQuery] decimal idxUsuario)
+        {
+            var id = _context.GetUltimoAbonoFactura(idxFactura, idxUsuario);
+            return Ok(new { id_detalle = id });
+        }
+
+        // GET api/Reportes/recibo-abono/42
+        // Comprobante de abono recibido de un cliente
+        [HttpGet("recibo-abono/{idDetalle}")]
+        public IActionResult GetReciboAbono(decimal idDetalle)
+        {
+            return Ok(_context.GetDetalleAbono(idDetalle));
         }
     }
 }

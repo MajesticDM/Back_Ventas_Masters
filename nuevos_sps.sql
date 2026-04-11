@@ -665,3 +665,241 @@ BEGIN
 
 END
 GO
+
+
+-- ============================================================
+-- SP_ABONOS_VENTAS  (paginado)
+-- Agrega @PAGINA y @TAMANO_PAGINA al bloque FACTURAS.
+-- La operacion FACTURAS devuelve solo la pagina pedida
+-- mas la columna total_registros (COUNT(*) OVER()) para que
+-- el frontend sepa el total sin una segunda consulta.
+--
+-- Parametros nuevos (solo afectan la operacion FACTURAS):
+--   @PAGINA        INT : pagina a retornar (base 1, default 1)
+--   @TAMANO_PAGINA INT : filas por pagina   (default 10)
+--
+-- Las demas operaciones (ABONOS, INSERT) no cambian.
+-- ============================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[SP_ABONOS_VENTAS]
+    @OPERACION      VARCHAR(10),
+    @ID_DETALLE     NUMERIC(18,0)  = NULL,
+    @IDX_FACTURA    NUMERIC(18,0)  = NULL,
+    @IDX_USUARIO    NUMERIC(18,0)  = NULL,
+    @IDX_CLIENTE    NUMERIC(18,0)  = NULL,
+    @IDX_FORMA_PAGO NUMERIC(18,0)  = NULL,
+    @VALOR_ABONADO  DECIMAL(18,2)  = NULL,
+    @COMENTARIO     VARCHAR(100)   = NULL,
+    @PAGO_TOTAL     BIT            = NULL,
+    @PAGO_PROVEEDOR BIT            = NULL,
+    @COMPRA         DECIMAL(18)    = NULL,
+    @ESTADO         BIT            = NULL,
+    @FECHA_FINAL    DATETIME       = NULL,
+    @FECHA_INICIAL  DATETIME       = NULL,
+    @PAGINA         INT            = 1,
+    @TAMANO_PAGINA  INT            = 10
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @OPERACION = 'FACTURAS'
+        BEGIN
+            SELECT
+                CL.NOMBRES + ' ' + CL.APELLIDOS        AS NOMBRES,
+                (FC.COSTO_TOTAL - FC.VALOR_PAGADO)      AS RESTANTE,
+                FC.COSTO_TOTAL,
+                FC.FECHA_VENTA,
+                FC.IDX_CLIENTE,
+                FC.ID_FACTURA,
+                FC.PAGO_INICIAL,
+                FP.FORMA_PAGO,
+                COUNT(*) OVER()                         AS total_registros
+            FROM FACTURAS FC
+            INNER JOIN CLIENTES    CL ON FC.IDX_CLIENTE            = CL.CLIENTE_ID
+            LEFT  JOIN FORMAS_PAGO FP ON FC.IDX_FORMA_PAGO_INICIAL = FP.ID_FORMA_PAGO
+            WHERE FC.IDX_FORMA_PAGO = 2
+              AND (@FECHA_INICIAL IS NULL OR FC.FECHA_VENTA > @FECHA_INICIAL)
+              AND (@FECHA_FINAL   IS NULL OR FC.FECHA_VENTA < @FECHA_FINAL)
+              AND (@IDX_CLIENTE   IS NULL OR FC.IDX_CLIENTE = @IDX_CLIENTE)
+            ORDER BY (FC.COSTO_TOTAL - FC.VALOR_PAGADO) DESC
+            OFFSET (@PAGINA - 1) * @TAMANO_PAGINA ROWS
+            FETCH NEXT @TAMANO_PAGINA ROWS ONLY;
+        END
+
+    IF @OPERACION = 'ABONOS'
+        BEGIN
+            SELECT
+                ID_DETALLE, IDX_FACTURA, IDX_USUARIO,
+                DP.NOMBRES + ' ' + DP.APELLIDOS AS USUARIO,
+                IDX_CLIENTE, IDX_FORMA_PAGO, VALOR_ABONADO,
+                COMENTARIO, FECHA_ABONO, FP.FORMA_PAGO
+            FROM DETALLE_ABONOS_VENTAS DAV
+            INNER JOIN USUARIOS         U  ON DAV.IDX_USUARIO = U.USUARIO_ID
+            INNER JOIN DATOS_PERSONALES DP ON U.IDX_DATOS_PERSONALES = DP.DATOS_PERSONALES_ID
+            LEFT  JOIN FORMAS_PAGO      FP ON DAV.IDX_FORMA_PAGO = FP.ID_FORMA_PAGO
+            WHERE (@IDX_FACTURA IS NULL OR IDX_FACTURA = @IDX_FACTURA)
+        END
+    ELSE IF @OPERACION = 'INSERT'
+        BEGIN
+            DECLARE @PAGO_REALIZADO_A_LA_FECHA  DECIMAL(18,2) = (SELECT TOP 1 ISNULL(VALOR_PAGADO,0)    FROM FACTURAS WHERE ID_FACTURA  = @IDX_FACTURA)
+            DECLARE @COSTO_TOTAL                DECIMAL(18,2) = (SELECT TOP 1 ISNULL(COSTO_TOTAL,0)     FROM FACTURAS WHERE ID_FACTURA  = @IDX_FACTURA)
+            DECLARE @SALDO_NEGATIVO_CLIENTE     DECIMAL(18,2) = (SELECT TOP 1 ISNULL(SALDO_NEGATIVO,0)  FROM CLIENTES WHERE CLIENTE_ID  = @IDX_CLIENTE)
+            DECLARE @SALDO_POSITIVO_CLIENTE     DECIMAL(18,2) = (SELECT TOP 1 ISNULL(SALDO,0)           FROM CLIENTES WHERE CLIENTE_ID  = @IDX_CLIENTE)
+            DECLARE @caja                       NUMERIC(18,0) = (SELECT TOP 1 ID_CAJA FROM CAJA WHERE IDX_USUARIO = @IDX_USUARIO AND FECHA_CIERRE_CAJA IS NULL)
+            DECLARE @PAGO_A_PROVEEDOR           DECIMAL       = @VALOR_ABONADO;
+
+            IF @PAGO_TOTAL = 1
+                BEGIN
+                    UPDATE FACTURAS SET VALOR_PAGADO = @COSTO_TOTAL WHERE ID_FACTURA = @IDX_FACTURA;
+                    SET @VALOR_ABONADO = @COSTO_TOTAL - @PAGO_REALIZADO_A_LA_FECHA
+                    SET @SALDO_NEGATIVO_CLIENTE = @SALDO_NEGATIVO_CLIENTE - (@COSTO_TOTAL - @PAGO_REALIZADO_A_LA_FECHA);
+                    UPDATE CLIENTES SET SALDO_NEGATIVO = @SALDO_NEGATIVO_CLIENTE WHERE CLIENTE_ID = @IDX_CLIENTE
+                END
+            ELSE
+                BEGIN
+                    IF (@VALOR_ABONADO + @PAGO_REALIZADO_A_LA_FECHA) > @COSTO_TOTAL
+                        BEGIN
+                            SET @SALDO_POSITIVO_CLIENTE = @SALDO_POSITIVO_CLIENTE + ((@VALOR_ABONADO + @PAGO_REALIZADO_A_LA_FECHA) - @COSTO_TOTAL)
+                            SET @SALDO_NEGATIVO_CLIENTE = @SALDO_NEGATIVO_CLIENTE - (@COSTO_TOTAL - @PAGO_REALIZADO_A_LA_FECHA)
+                            UPDATE CLIENTES SET SALDO_NEGATIVO = @SALDO_NEGATIVO_CLIENTE, SALDO = @SALDO_POSITIVO_CLIENTE WHERE CLIENTE_ID = @IDX_CLIENTE
+                            SET @PAGO_REALIZADO_A_LA_FECHA = @PAGO_REALIZADO_A_LA_FECHA + @VALOR_ABONADO
+                            UPDATE FACTURAS SET VALOR_PAGADO = @PAGO_REALIZADO_A_LA_FECHA WHERE ID_FACTURA = @IDX_FACTURA
+                        END
+                    ELSE
+                        BEGIN
+                            SET @PAGO_REALIZADO_A_LA_FECHA = @PAGO_REALIZADO_A_LA_FECHA + @VALOR_ABONADO
+                            UPDATE FACTURAS SET VALOR_PAGADO = @PAGO_REALIZADO_A_LA_FECHA WHERE ID_FACTURA = @IDX_FACTURA
+                            SET @SALDO_NEGATIVO_CLIENTE = @SALDO_NEGATIVO_CLIENTE - @VALOR_ABONADO
+                            UPDATE CLIENTES SET SALDO_NEGATIVO = @SALDO_NEGATIVO_CLIENTE WHERE CLIENTE_ID = @IDX_CLIENTE
+                        END
+                END
+
+            INSERT INTO DETALLE_ABONOS_VENTAS (IDX_FACTURA, IDX_USUARIO, IDX_CLIENTE, IDX_FORMA_PAGO, VALOR_ABONADO, COMENTARIO, ESTADO, IDX_CAJA)
+            VALUES (@IDX_FACTURA, @IDX_USUARIO, @IDX_CLIENTE, @IDX_FORMA_PAGO, @VALOR_ABONADO, @COMENTARIO, 1, @caja)
+
+            IF (@PAGO_PROVEEDOR = 1)
+                BEGIN
+                    DECLARE @PROVEEDOR DECIMAL = (SELECT TOP 1 IDX_PROVEEDOR FROM COMPRAS WHERE ID_COMPRA = @COMPRA)
+                    EXEC [dbo].[SP_ABONOS_COMPRAS]
+                        @OPERACION        = 'INSERT',
+                        @IDX_COMPRA       = @COMPRA,
+                        @IDX_USUARIO      = @IDX_USUARIO,
+                        @IDX_PROVEEDOR    = @PROVEEDOR,
+                        @IDX_FORMA_PAGO   = @IDX_FORMA_PAGO,
+                        @IDX_CLIENTE      = @IDX_CLIENTE,
+                        @BIT_PAGA_CLIENTE = 1,
+                        @VALOR_ABONADO    = @PAGO_A_PROVEEDOR,
+                        @PAGO_TOTAL       = 0
+                END
+        END
+END
+GO
+
+
+-- ============================================================
+-- SP_ABONOS_COMPRAS  (paginado)
+-- Agrega @PAGINA y @TAMANO_PAGINA al bloque COMPRAS.
+-- La operacion COMPRAS devuelve solo la pagina pedida
+-- mas la columna total_registros (COUNT(*) OVER()).
+--
+-- Parametros nuevos (solo afectan la operacion COMPRAS):
+--   @PAGINA        INT : pagina a retornar (base 1, default 1)
+--   @TAMANO_PAGINA INT : filas por pagina   (default 10)
+-- ============================================================
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[SP_ABONOS_COMPRAS]
+    @OPERACION          VARCHAR(10),
+    @ID_DETALLE         NUMERIC(18,0)  = NULL,
+    @IDX_COMPRA         NUMERIC(18,0)  = NULL,
+    @IDX_USUARIO        NUMERIC(18,0)  = NULL,
+    @IDX_PROVEEDOR      NUMERIC(18,0)  = NULL,
+    @IDX_FORMA_PAGO     NUMERIC(18,0)  = NULL,
+    @IDX_CLIENTE        NUMERIC(18,0)  = NULL,
+    @BIT_PAGA_CLIENTE   NUMERIC(18,0)  = NULL,
+    @VALOR_ABONADO      DECIMAL(18,2)  = NULL,
+    @COMENTARIO         VARCHAR(100)   = NULL,
+    @ESTADO             BIT            = NULL,
+    @PAGO_TOTAL         BIT            = NULL,
+    @FECHA_FINAL        DATETIME       = NULL,
+    @FECHA_INICIAL      DATETIME       = NULL,
+    @PAGINA             INT            = 1,
+    @TAMANO_PAGINA      INT            = 10
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @OPERACION = 'ABONOS'
+        BEGIN
+            SELECT
+                IDX_COMPRA, IDX_USUARIO, DAC.IDX_FORMA_PAGO,
+                DP.NOMBRES + ' ' + DP.APELLIDOS             AS USUARIO,
+                DAC.FECHA_ABONO, DAC.VALOR_ABONADO,
+                FP.FORMA_PAGO,
+                C.NOMBRES + ' ' + C.APELLIDOS               AS CLIENTE,
+                ISNULL(DAC.BIT_PAGA_CLIENTE, 0)             AS bit_paga_cliente,
+                DAC.COMENTARIO
+            FROM DETALLE_ABONOS_COMPRAS DAC
+            INNER JOIN USUARIOS         U  ON DAC.IDX_USUARIO = U.USUARIO_ID
+            INNER JOIN DATOS_PERSONALES DP ON U.IDX_DATOS_PERSONALES = DP.DATOS_PERSONALES_ID
+            LEFT  JOIN FORMAS_PAGO      FP ON DAC.IDX_FORMA_PAGO = FP.ID_FORMA_PAGO
+            LEFT  JOIN CLIENTES         C  ON DAC.IDX_CLIENTE = C.CLIENTE_ID
+            WHERE @IDX_COMPRA IS NULL OR DAC.IDX_COMPRA = @IDX_COMPRA
+        END
+    ELSE IF @OPERACION = 'COMPRAS'
+        BEGIN
+            SELECT
+                PR.RAZON_SOCIAL,
+                (CP.COSTO_TOTAL - CP.VALOR_PAGADO)  AS RESTANTE,
+                CP.COSTO_TOTAL,
+                CP.FECHA_COMPRA,
+                CP.IDX_PROVEEDOR,
+                CP.ID_COMPRA,
+                CP.PAGO_INICIAL,
+                FORMAS_PAGO.FORMA_PAGO,
+                COUNT(*) OVER()                     AS total_registros
+            FROM COMPRAS CP
+            INNER JOIN PROVEEDORES PR  ON CP.IDX_PROVEEDOR          = PR.ID_PROVEEDOR
+            LEFT  JOIN FORMAS_PAGO     ON CP.IDX_FORMA_PAGO_INICIAL = FORMAS_PAGO.ID_FORMA_PAGO
+            WHERE CP.IDX_FORMA_PAGO = 2
+              AND (@FECHA_INICIAL IS NULL OR CP.FECHA_COMPRA > @FECHA_INICIAL)
+              AND (@FECHA_FINAL   IS NULL OR CP.FECHA_COMPRA < @FECHA_FINAL)
+              AND (@IDX_PROVEEDOR IS NULL OR CP.IDX_PROVEEDOR = @IDX_PROVEEDOR)
+            ORDER BY (CP.COSTO_TOTAL - CP.VALOR_PAGADO) DESC
+            OFFSET (@PAGINA - 1) * @TAMANO_PAGINA ROWS
+            FETCH NEXT @TAMANO_PAGINA ROWS ONLY;
+        END
+    ELSE IF @OPERACION = 'INSERT'
+        BEGIN
+            DECLARE @PAGO_REALIZADO_A_LA_FECHA  DECIMAL(18,2) = (SELECT TOP 1 ISNULL(VALOR_PAGADO,0)    FROM COMPRAS     WHERE ID_COMPRA    = @IDX_COMPRA)
+            DECLARE @COSTO_TOTAL                DECIMAL(18,2) = (SELECT TOP 1 ISNULL(COSTO_TOTAL,0)     FROM COMPRAS     WHERE ID_COMPRA    = @IDX_COMPRA)
+            DECLARE @SALDO_PENDIENTE_PROVEEDOR  DECIMAL(18,2) = (SELECT TOP 1 ISNULL(SALDO_PENDIENTE,0) FROM PROVEEDORES WHERE ID_PROVEEDOR = @IDX_PROVEEDOR)
+            DECLARE @caja                       NUMERIC(18,0) = (SELECT TOP 1 ID_CAJA FROM CAJA WHERE IDX_USUARIO = @IDX_USUARIO AND FECHA_CIERRE_CAJA IS NULL)
+
+            IF @PAGO_TOTAL = 1
+                BEGIN
+                    UPDATE COMPRAS SET VALOR_PAGADO = @COSTO_TOTAL WHERE ID_COMPRA = @IDX_COMPRA
+                    SET @SALDO_PENDIENTE_PROVEEDOR = @SALDO_PENDIENTE_PROVEEDOR - (@COSTO_TOTAL - @PAGO_REALIZADO_A_LA_FECHA)
+                    SET @VALOR_ABONADO = @COSTO_TOTAL - @PAGO_REALIZADO_A_LA_FECHA
+                    UPDATE PROVEEDORES SET SALDO_PENDIENTE = @SALDO_PENDIENTE_PROVEEDOR WHERE ID_PROVEEDOR = @IDX_PROVEEDOR
+                END
+            ELSE
+                BEGIN
+                    SET @PAGO_REALIZADO_A_LA_FECHA = @PAGO_REALIZADO_A_LA_FECHA + @VALOR_ABONADO
+                    UPDATE COMPRAS SET VALOR_PAGADO = @PAGO_REALIZADO_A_LA_FECHA WHERE ID_COMPRA = @IDX_COMPRA
+                    SET @SALDO_PENDIENTE_PROVEEDOR = @SALDO_PENDIENTE_PROVEEDOR - @VALOR_ABONADO
+                    UPDATE PROVEEDORES SET SALDO_PENDIENTE = @SALDO_PENDIENTE_PROVEEDOR WHERE ID_PROVEEDOR = @IDX_PROVEEDOR
+                END
+
+            INSERT INTO DETALLE_ABONOS_COMPRAS (IDX_COMPRA, IDX_USUARIO, IDX_FORMA_PAGO, VALOR_ABONADO, FECHA_ABONO, COMENTARIO, ESTADO, IDX_CAJA, IDX_CLIENTE, BIT_PAGA_CLIENTE)
+            VALUES (@IDX_COMPRA, @IDX_USUARIO, @IDX_FORMA_PAGO, @VALOR_ABONADO, GETDATE(), @COMENTARIO, 1, @caja, @IDX_CLIENTE, @BIT_PAGA_CLIENTE)
+        END
+END
+GO

@@ -1,5 +1,6 @@
 ﻿using CORE.MMms.Interfaces;
 using INFRA.MMms.Repository;
+using INFRA.MMms.Services;
 
 namespace API.MMms.Resolvers
 {
@@ -29,6 +30,7 @@ namespace API.MMms.Resolvers
             services.AddTransient<IAbonos, AbonosRepo>();
             services.AddTransient<ICaja, CajaRepo>();
             services.AddTransient<IReportes, ReportesRepo>();
+            services.AddTransient<IPrintService, PrintService>();
         }
     }
 }

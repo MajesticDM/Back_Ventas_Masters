@@ -15,10 +15,13 @@ namespace API.MMms.Controllers
     {
         private readonly IServicesGiven _context;
         private readonly IMapper _mapper;
-        public ServicesGivenController(IServicesGiven context, IMapper mapper)
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public ServicesGivenController(IServicesGiven context, IMapper mapper, IServiceScopeFactory scopeFactory)
         {
-                _context= context; 
+            _context = context;
             _mapper = mapper;
+            _scopeFactory = scopeFactory;
         }
 
 
@@ -55,8 +58,17 @@ namespace API.MMms.Controllers
         [HttpPost("CrearFactua")]
         public async Task<IActionResult> Save(Venta venta)
         {
-            string respuesta = _context.crearFacturaServiciosProductos(venta);
-            return Ok(venta);
+            string idFactura = _context.crearFacturaServiciosProductos(venta);
+
+            if (decimal.TryParse(idFactura, out decimal idDec))
+                _ = Task.Run(() =>
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var print = scope.ServiceProvider.GetRequiredService<IPrintService>();
+                    print.ImprimirFactura(idDec);
+                });
+
+            return Ok(new { id_factura = idFactura });
         }
 
         [HttpPut("ActualizarFactura/{Id}/{estado}")]
