@@ -78,13 +78,18 @@ namespace API.MMms.Controllers
             return Ok(respuesta);
         }
 
-        [HttpPost("CargarFacturas/{todas}/{cliente}/{usuario}/{fechaInicial}/{fechaFinal}/")]
-        public async Task<IActionResult> cargarFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal)
+        [HttpPost("CargarFacturas/{todas}/{cliente}/{usuario}/{fechaInicial}/{fechaFinal}/{soloAnuladas}")]
+        public async Task<IActionResult> cargarFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal, bool soloAnuladas)
         {
-            DataSet resultados = new DataSet();
-
-            resultados = _context.SelectFacturas(todas, cliente, usuario, fechaInicial, fechaFinal);
+            DataSet resultados = _context.SelectFacturas(todas, cliente, usuario, fechaInicial, fechaFinal, soloAnuladas);
             return Ok(resultados);
+        }
+
+        [HttpDelete("AnularFactura/{id}")]
+        public IActionResult AnularFactura(decimal id)
+        {
+            bool ok = _context.AnularFactura(id);
+            return Ok(ok);
         }
 
         [HttpPost("CargarCompras/{todas}/{proveedor}/{usuario}/{fechaInicial}/{fechaFinal}/")]

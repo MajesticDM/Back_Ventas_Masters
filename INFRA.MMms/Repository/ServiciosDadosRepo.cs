@@ -112,7 +112,7 @@ namespace INFRA.MMms.Repository
             return idFactura.ToString();
         }
 
-        public DataSet SelectFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal)
+        public DataSet SelectFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal, bool soloAnuladas)
         {
             DataSet productos = new DataSet();
 
@@ -132,12 +132,25 @@ namespace INFRA.MMms.Repository
 
                     command.Parameters.Add(new SqlParameter("@cliente", SqlDbType.Decimal)).Value = cliente;
                     command.Parameters.Add(new SqlParameter("@usuario", SqlDbType.Decimal)).Value = usuario;
+                    command.Parameters.Add(new SqlParameter("@solo_anuladas", SqlDbType.Bit)).Value = soloAnuladas;
 
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(productos);
                 }
             }
             return productos;
+        }
+
+        public bool AnularFactura(decimal idFactura)
+        {
+            using SqlConnection connection = new(_context.Database.GetDbConnection().ConnectionString);
+            connection.Open();
+            using SqlCommand cmd = new("SP_FACTURAS_ACCIONES", connection);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("@accion", SqlDbType.VarChar, 100).Value = "anularFactura";
+            cmd.Parameters.Add("@id_factura", SqlDbType.Decimal).Value = idFactura;
+            cmd.ExecuteNonQuery();
+            return true;
         }
 
         public DataSet SelectCompras(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal)
