@@ -22,7 +22,14 @@ namespace INFRA.MMms.Repository
 
         public DataTable getFacturas(GetAbonosDto getAbonos)
         {
-            return AbonosVentasAcciones(new AbonoVentaDto { fecha_inicial = getAbonos.fecha_inicial, fecha_final = getAbonos.fecha_final, idx_cliente = getAbonos.idx_cliente }, "FACTURAS");
+            return AbonosVentasAcciones(new AbonoVentaDto
+            {
+                fecha_inicial  = getAbonos.fecha_inicial,
+                fecha_final    = getAbonos.fecha_final,
+                idx_cliente    = getAbonos.idx_cliente,
+                pagina         = getAbonos.pagina,
+                tamano_pagina  = getAbonos.tamano_pagina
+            }, "FACTURAS");
         }
 
         public DataTable getFacturasVenta(decimal id_factura)
@@ -88,6 +95,9 @@ namespace INFRA.MMms.Repository
                     if (dto.fecha_inicial.HasValue)
                         command.Parameters.Add("@FECHA_INICIAL", SqlDbType.DateTime).Value = dto.fecha_inicial.Value;
 
+                    command.Parameters.Add("@PAGINA",        SqlDbType.Int).Value = dto.pagina;
+                    command.Parameters.Add("@TAMANO_PAGINA", SqlDbType.Int).Value = dto.tamano_pagina;
+
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(result);
                 }
@@ -108,7 +118,14 @@ namespace INFRA.MMms.Repository
 
         public DataTable getCompras(GetAbonosDto getAbonos)
         {
-            return AbonosComprasAcciones(new AbonoComprasDto { idx_proveedor = getAbonos.idx_proveedor, fecha_inicial = getAbonos.fecha_inicial, fecha_final = getAbonos.fecha_final }, "COMPRAS");
+            return AbonosComprasAcciones(new AbonoComprasDto
+            {
+                idx_proveedor = getAbonos.idx_proveedor,
+                fecha_inicial = getAbonos.fecha_inicial,
+                fecha_final   = getAbonos.fecha_final,
+                pagina        = getAbonos.pagina,
+                tamano_pagina = getAbonos.tamano_pagina
+            }, "COMPRAS");
         }
 
         public DataTable postAbonosCompra(AbonoComprasDto abonoCompraDto)
@@ -156,6 +173,29 @@ namespace INFRA.MMms.Repository
 
                     if (dto.fecha_final.HasValue)
                         command.Parameters.Add("@FECHA_FINAL", SqlDbType.DateTime).Value = dto.fecha_final.Value;
+
+                    command.Parameters.Add("@PAGINA",        SqlDbType.Int).Value = dto.pagina;
+                    command.Parameters.Add("@TAMANO_PAGINA", SqlDbType.Int).Value = dto.tamano_pagina;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        public DataSet getAbonoVentaExcel(decimal id_factura)
+        {
+            DataSet result = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_CARGAR_ABONO_VENTA_EXCEL", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@ID_FACTURA", SqlDbType.Decimal).Value = id_factura;
 
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(result);

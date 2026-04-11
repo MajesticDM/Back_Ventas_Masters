@@ -15,4 +15,6 @@ public class AbonoVentaDto
     public bool? estado { get; set; }
     public DateTime? fecha_final { get; set; }
     public DateTime? fecha_inicial { get; set; }
+    public int pagina { get; set; } = 1;
+    public int tamano_pagina { get; set; } = 10;
 }

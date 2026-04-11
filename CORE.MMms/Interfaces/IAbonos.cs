@@ -14,5 +14,6 @@ namespace CORE.MMms.Interfaces
         DataTable getCompras(GetAbonosDto getAbonos);
         DataTable getAbonosCompra(decimal id_factura);
         DataTable postAbonosCompra(AbonoComprasDto abonoVentaDto);
+        DataSet getAbonoVentaExcel(decimal id_factura);
     }
 }

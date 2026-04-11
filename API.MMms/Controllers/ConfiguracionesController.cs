@@ -27,6 +27,13 @@ namespace API.MMms.Controllers
             return Ok(_context.SeleccionarConfiguracionGeneral());
         }
 
+        [HttpPost("Configuracion/modificacion")]
+        public IActionResult PostConfiguracionGeneral([FromBody] ConfiguracionGeneralDto dto)
+        {
+            var resultado = _context.ModificarConfiguracionGeneral(dto);
+            return Ok(resultado);
+        }
+
         [HttpGet("Notificaciones/mostrar")]
         public async Task<IActionResult> consultarNotificaciones()
         {

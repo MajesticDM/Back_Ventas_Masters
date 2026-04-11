@@ -1,10 +1,11 @@
 using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Drawing.Printing;
 
 namespace API.MMms.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ReportesController : ControllerBase
@@ -14,6 +15,15 @@ namespace API.MMms.Controllers
         public ReportesController(IReportes context)
         {
             _context = context;
+        }
+
+        // GET api/Reportes/impresoras
+        // Lista todas las impresoras instaladas en el servidor — usar para verificar el nombre exacto
+        [HttpGet("impresoras")]
+        public IActionResult GetImpresoras()
+        {
+            var lista = PrinterSettings.InstalledPrinters.Cast<string>().ToList();
+            return Ok(lista);
         }
 
         // GET api/Reportes/balance
