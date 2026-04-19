@@ -146,6 +146,66 @@ namespace INFRA.MMms.Repository
             }
             return productos;
         }
+        public DataSet SelectFacturasPaginado(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina)
+        {
+            DataSet resultado = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_CARGADO_FACTURAS_V2", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add(new SqlParameter("@todas", SqlDbType.Bit)).Value = todas;
+
+                    if (fechaInicial != "null")
+                        command.Parameters.Add(new SqlParameter("@fechaInicial", SqlDbType.DateTime)).Value = fechaInicial;
+
+                    if (fechaFinal != "null")
+                        command.Parameters.Add(new SqlParameter("@fechaFinal", SqlDbType.DateTime)).Value = fechaFinal;
+
+                    command.Parameters.Add(new SqlParameter("@cliente", SqlDbType.Decimal)).Value = cliente;
+                    command.Parameters.Add(new SqlParameter("@usuario", SqlDbType.Decimal)).Value = usuario;
+                    command.Parameters.Add(new SqlParameter("@pagina", SqlDbType.Int)).Value = pagina;
+                    command.Parameters.Add(new SqlParameter("@registros_por_pagina", SqlDbType.Int)).Value = registrosPorPagina;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(resultado);
+                }
+            }
+            return resultado;
+        }
+
+        public DataSet SelectComprasPaginado(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina)
+        {
+            DataSet resultado = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_CARGADO_COMPRAS_V2", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add(new SqlParameter("@todas", SqlDbType.Bit)).Value = todas;
+
+                    if (fechaInicial != "null")
+                        command.Parameters.Add(new SqlParameter("@fechaInicial", SqlDbType.DateTime)).Value = fechaInicial;
+
+                    if (fechaFinal != "null")
+                        command.Parameters.Add(new SqlParameter("@fechaFinal", SqlDbType.DateTime)).Value = fechaFinal;
+
+                    command.Parameters.Add(new SqlParameter("@proveedor", SqlDbType.Decimal)).Value = proveedor;
+                    command.Parameters.Add(new SqlParameter("@usuario", SqlDbType.Decimal)).Value = usuario;
+                    command.Parameters.Add(new SqlParameter("@pagina", SqlDbType.Int)).Value = pagina;
+                    command.Parameters.Add(new SqlParameter("@registros_por_pagina", SqlDbType.Int)).Value = registrosPorPagina;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(resultado);
+                }
+            }
+            return resultado;
+        }
+
         public async Task<bool> Update(int id, bool estado)
         {
             var dat = await GetxId(id);

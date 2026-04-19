@@ -13,5 +13,7 @@ namespace CORE.MMms.Interfaces
         string crearFacturaServiciosProductos(Venta venta);
         DataSet SelectFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal);
         DataSet SelectCompras(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal);
+        DataSet SelectFacturasPaginado(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina);
+        DataSet SelectComprasPaginado(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina);
     }
 }

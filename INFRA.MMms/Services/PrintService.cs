@@ -60,7 +60,7 @@ namespace INFRA.MMms.Services
                 lines.Add($"Vendedor: {cab["vendedor"]}");
                 lines.Add(Sep());
 
-                lines.Add("  " + "Cant".PadLeft(8) + "$/Unit".PadLeft(14) + "Total".PadLeft(14));
+                lines.Add("  " + "Cant".PadLeft(8) + "$/Unid".PadLeft(12) + "Total".PadLeft(12));
                 lines.Add(Sep());
 
                 foreach (DataRow lr in lineas.Rows)
@@ -73,13 +73,13 @@ namespace INFRA.MMms.Services
                     decimal divisor   = cantidad == 0 ? 1 : cantidad;
                     decimal precioVenta = divisor == 0 ? 0 : totalLinea / divisor;
 
-                    string cantCol   = gramaje > 0 ? $"{cantidad}uds/{gramaje}g" : $"{cantidad}uds";
-                    string precioCol = gramaje > 0 ? $"{Cop(precioVenta)}/uds" : Cop(precioVenta);
+                    string cantCol   = gramaje > 0 ? $"{gramaje}g" : $"{cantidad}uds";
+                    string precioCol = gramaje > 0 ? $"{Cop(precioVenta)}/U" : Cop(precioVenta);
                     string totalCol  = Cop(totalLinea);
                     string nombre    = lr["nombre"].ToString()!;
 
                     lines.Add(nombre);
-                    lines.Add("  " + cantCol.PadLeft(8) + precioCol.PadLeft(14) + totalCol.PadLeft(14));
+                    lines.Add("  " + cantCol.PadLeft(8) + precioCol.PadLeft(12) + totalCol.PadLeft(12));
                 }
 
                 lines.Add(Sep());
@@ -191,27 +191,31 @@ namespace INFRA.MMms.Services
         // ----------------------------------------------------------------
         private void Imprimir(List<string> lines)
         {
-            var capturedLines = lines;
-            var doc = new PrintDocument();
-            doc.PrinterSettings.PrinterName = _nombreImpresora;
-
-            doc.PrintPage += (_, e) =>
+            for (int copia = 0; copia < 2; copia++)
             {
-                using var font = new Font("Courier New", 8f, FontStyle.Regular, GraphicsUnit.Point);
-                float lineH = font.GetHeight(e.Graphics);
-                float x = e.MarginBounds.Left;
-                float y = e.MarginBounds.Top;
+                var capturedLines = lines;
+                var doc = new PrintDocument();
+                doc.PrinterSettings.PrinterName = _nombreImpresora;
+                doc.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
 
-                foreach (var line in capturedLines)
+                doc.PrintPage += (_, e) =>
                 {
-                    e.Graphics.DrawString(line, font, Brushes.Black, x, y);
-                    y += lineH;
-                }
+                    using var font = new Font("Courier New", 8f, FontStyle.Regular, GraphicsUnit.Point);
+                    float lineH = font.GetHeight(e.Graphics);
+                    float x = e.PageBounds.Left + 4;
+                    float y = e.PageBounds.Top + 4;
 
-                e.HasMorePages = false;
-            };
+                    foreach (var line in capturedLines)
+                    {
+                        e.Graphics.DrawString(line, font, Brushes.Black, x, y);
+                        y += lineH;
+                    }
 
-            doc.Print();
+                    e.HasMorePages = false;
+                };
+
+                doc.Print();
+            }
         }
 
         // ----------------------------------------------------------------

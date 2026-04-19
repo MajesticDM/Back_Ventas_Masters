@@ -78,6 +78,22 @@ namespace API.MMms.Controllers
             return Ok(respuesta);
         }
 
+        [HttpGet("ImprimirFactura/{id}")]
+        public IActionResult ImprimirFactura(string id)
+        {
+            if (!decimal.TryParse(id, out decimal idDec))
+                return BadRequest("id inválido");
+
+            _ = Task.Run(() =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var print = scope.ServiceProvider.GetRequiredService<IPrintService>();
+                print.ImprimirFactura(idDec);
+            });
+
+            return Ok();
+        }
+
         [HttpPost("CargarFacturas/{todas}/{cliente}/{usuario}/{fechaInicial}/{fechaFinal}/")]
         public async Task<IActionResult> cargarFacturas(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal)
         {
@@ -93,6 +109,20 @@ namespace API.MMms.Controllers
             DataSet resultados = new DataSet();
 
             resultados = _context.SelectCompras(todas, proveedor, usuario, fechaInicial, fechaFinal);
+            return Ok(resultados);
+        }
+
+        [HttpPost("CargarFacturasPaginado/{todas}/{cliente}/{usuario}/{fechaInicial}/{fechaFinal}/{pagina}/{registrosPorPagina}")]
+        public IActionResult CargarFacturasPaginado(bool todas, decimal cliente, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina)
+        {
+            DataSet resultados = _context.SelectFacturasPaginado(todas, cliente, usuario, fechaInicial, fechaFinal, pagina, registrosPorPagina);
+            return Ok(resultados);
+        }
+
+        [HttpPost("CargarComprasPaginado/{todas}/{proveedor}/{usuario}/{fechaInicial}/{fechaFinal}/{pagina}/{registrosPorPagina}")]
+        public IActionResult CargarComprasPaginado(bool todas, decimal proveedor, decimal usuario, string fechaInicial, string fechaFinal, int pagina, int registrosPorPagina)
+        {
+            DataSet resultados = _context.SelectComprasPaginado(todas, proveedor, usuario, fechaInicial, fechaFinal, pagina, registrosPorPagina);
             return Ok(resultados);
         }
     }

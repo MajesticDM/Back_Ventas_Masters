@@ -434,7 +434,7 @@ BEGIN
             P.CODIGO_BARRAS,
             P.PRODUCTO,
             C.CATEGORIA,
-            P.QUANTITY                                                  AS stock_actual,
+            P.GRAMAJE_DEL_PRODUCTO                                                  AS stock_actual,
             P.COSTO_X_UNIDAD                                            AS costo_actual,
             ISNULL(V.total_vendido, 0)                                  AS vendido_30_dias,
             CAST(ISNULL(V.total_vendido, 0) / 30.0 AS DECIMAL(10,2))   AS velocidad_diaria,
@@ -458,11 +458,8 @@ BEGIN
         velocidad_diaria,
         dias_hasta_agotarse,
         CASE
-            WHEN stock_actual = 0                                   THEN 'AGOTADO'
-            WHEN vendido_30_dias = 0                                THEN 'SIN_MOVIMIENTO'
-            WHEN dias_hasta_agotarse < 7                            THEN 'CRITICO'
-            WHEN dias_hasta_agotarse < 20                           THEN 'ALERTA'
-            ELSE 'OK'
+            WHEN stock_actual = 0                                   THEN 'VENDIDO'
+            ELSE 'STOCK'
         END AS estado
     FROM cte_base
     ORDER BY
