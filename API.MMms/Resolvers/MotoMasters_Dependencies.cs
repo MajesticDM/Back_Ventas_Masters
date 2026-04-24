@@ -31,6 +31,12 @@ namespace API.MMms.Resolvers
             services.AddTransient<ICaja, CajaRepo>();
             services.AddTransient<IReportes, ReportesRepo>();
             services.AddTransient<IPrintService, PrintService>();
+            services.AddTransient<IDian, DianRepo>();
+            services.AddTransient<IXadesSignerService, XadesSignerService>();
+            services.AddTransient<IDianXmlService, DianXmlService>();
+            services.AddHttpClient("dian", c => c.Timeout = TimeSpan.FromSeconds(30));
+            services.AddTransient<IDianTransmissionService, DianTransmissionService>();
+            services.AddTransient<IDianConfig, DianConfigRepo>();
         }
     }
 }
