@@ -18,5 +18,7 @@ public partial class ProductoDTOs
     public decimal? proveedor { get; set; }
     public string? codigO_BARRAS { get; set; }
     public decimal? gramajE_DEL_PRODUCTO { get; set; }
+    public decimal? porcentajE_IVA  { get; set; }
+    public string?  tipO_IMPUESTO   { get; set; }
 
 }

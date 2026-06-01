@@ -42,6 +42,8 @@ namespace INFRA.MMms.Repository
                     command.Parameters.Add("@version_whatsapp",        SqlDbType.VarChar, 100).Value  = (object?)dto.version_whatsapp ?? DBNull.Value;
                     command.Parameters.Add("@porcentaje_ganancia",     SqlDbType.Decimal).Value       = (object?)dto.porcentajE_GANANCIA ?? DBNull.Value;
                     command.Parameters.Add("@ponderado",               SqlDbType.Bit).Value           = (object?)dto.biT_PONDERADO ?? DBNull.Value;
+                    command.Parameters.Add("@porcentaje_iva",          SqlDbType.Decimal).Value       = (object?)dto.porcentaje_iva   ?? DBNull.Value;
+                    command.Parameters.Add("@bit_iva_incluido",        SqlDbType.Bit).Value           = (object?)dto.bit_iva_incluido ?? DBNull.Value;
 
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(result);

@@ -17,4 +17,6 @@ public class ConfiguracionGeneralDto
     public string? version_whatsapp { get; set; }
     public decimal? porcentajE_GANANCIA { get; set; }
     public bool? biT_PONDERADO { get; set; }
+    public decimal? porcentaje_iva   { get; set; }
+    public bool?    bit_iva_incluido { get; set; }
 }

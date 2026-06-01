@@ -104,6 +104,12 @@ namespace INFRA.MMms.Repository
                     if (dto.gramajE_DEL_PRODUCTO.HasValue)
                         command.Parameters.Add("@GRAMAJE_DEL_PRODUCTO", SqlDbType.Decimal).Value = dto.gramajE_DEL_PRODUCTO.Value;
 
+                    if (dto.porcentajE_IVA.HasValue)
+                        command.Parameters.Add("@porcentaje_iva", SqlDbType.Decimal).Value = dto.porcentajE_IVA.Value;
+
+                    if (dto.tipO_IMPUESTO != null)
+                        command.Parameters.Add("@tipo_impuesto", SqlDbType.VarChar, 20).Value = dto.tipO_IMPUESTO;
+
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
                     adapter.Fill(result);
                 }
