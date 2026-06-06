@@ -97,6 +97,17 @@ namespace API.MMms.Controllers
         public async Task<IActionResult> postAbonosCompra([FromBody] AbonoComprasDto abonosDto)
         {
             var MMD = _context.postAbonosCompra(abonosDto);
+
+            decimal idxCompra  = abonosDto.idx_compra  ?? 0;
+            decimal idxUsuario = abonosDto.idx_usuario ?? 0;
+            if (idxCompra > 0 && idxUsuario > 0)
+                _ = Task.Run(() =>
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var print = scope.ServiceProvider.GetRequiredService<IPrintService>();
+                    print.ImprimirAbonoCompra(idxCompra, idxUsuario);
+                });
+
             return Ok(MMD);
         }
 

@@ -114,6 +114,7 @@ namespace INFRA.MMms.Repository
                     command.Parameters.Add(new SqlParameter("@userpassword", SqlDbType.VarChar)).Value = datos.contrasena;
                     command.Parameters.Add(new SqlParameter("@userstatus", SqlDbType.Bit)).Value = (datos.estado);
                     command.Parameters.Add(new SqlParameter("@usertype", SqlDbType.Decimal)).Value = datos.usuariO_TIPO_ID;
+                    command.Parameters.Add(new SqlParameter("@id_perfil", SqlDbType.Decimal)).Value = datos.idX_PERFIL;
                     command.Parameters.Add(new SqlParameter("@foto", SqlDbType.VarChar)).Value = datos.rutaFoto;
 
                     SqlDataAdapter adapter = new SqlDataAdapter(command);

@@ -1,4 +1,5 @@
 ﻿using CORE.MMms.Entidades;
+using System.Data;
 
 namespace CORE.MMms.Interfaces
 {
@@ -9,5 +10,6 @@ namespace CORE.MMms.Interfaces
         Task Post(Categoria MMD);
         Task<bool> Update(Categoria MMD);
         Task<bool> Delete(int Id);
+        Task<DataTable> CargarCategorias();
     }
 }

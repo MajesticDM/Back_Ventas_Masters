@@ -9,7 +9,7 @@ namespace INFRA.MMms.Services
 {
     public class PrintService : IPrintService
     {
-        private const int LineWidth = 40;
+        private const int LineWidth = 36;
         private static readonly CultureInfo CulCO = new CultureInfo("es-CO");
         private static readonly object _logLock = new object();
 
@@ -187,6 +187,150 @@ namespace INFRA.MMms.Services
         }
 
         // ----------------------------------------------------------------
+        // Recibo de compra
+        // ----------------------------------------------------------------
+        public void ImprimirCompra(decimal idCompra)
+        {
+            try
+            {
+                var ds = _reportes.GetDetalleCompra(idCompra);
+                if (ds.Tables.Count < 1 || ds.Tables[0].Rows.Count == 0)
+                {
+                    Log($"[COMPRA] id={idCompra} → SIN DATOS en SP_DETALLE_COMPRA");
+                    return;
+                }
+
+                var cab    = ds.Tables[0].Rows[0];
+                var lineas = ds.Tables.Count > 1 ? ds.Tables[1] : new DataTable();
+
+                var lines = new List<string>();
+
+                lines.Add(Center(_nombreEmpresa));
+                lines.Add(Center($"Compra #{cab["id_compra"]} - {cab["fecha_compra"]}"));
+                lines.Add(Sep());
+
+                lines.Add($"Proveedor: {cab["proveedor"]}");
+                lines.Add($"Tel: {Val(cab, "telefono_proveedor")}");
+                lines.Add($"Comprador: {cab["comprador"]}");
+                lines.Add(Sep());
+
+                lines.Add("  " + "Cant".PadLeft(8) + "$/Unid".PadLeft(12) + "Total".PadLeft(12));
+                lines.Add(Sep());
+
+                foreach (DataRow lr in lineas.Rows)
+                {
+                    decimal gramaje    = lr["gramaje_total"] == DBNull.Value ? 0 : Convert.ToDecimal(lr["gramaje_total"]);
+                    decimal cantidad   = Convert.ToDecimal(lr["cantidad"]);
+                    decimal totalLinea = Convert.ToDecimal(lr["total_linea"]);
+
+                    decimal divisor     = cantidad == 0 ? 1 : cantidad;
+                    decimal costoUnidad = divisor == 0 ? 0 : totalLinea / divisor;
+
+                    string cantCol   = gramaje > 0 ? $"{gramaje}g" : $"{cantidad}uds";
+                    string precioCol = gramaje > 0 ? $"{Cop(costoUnidad)}/U" : Cop(costoUnidad);
+                    string totalCol  = Cop(totalLinea);
+                    string nombre    = lr["nombre"].ToString()!;
+
+                    lines.Add(nombre);
+                    lines.Add("  " + cantCol.PadLeft(8) + precioCol.PadLeft(12) + totalCol.PadLeft(12));
+                }
+
+                lines.Add(Sep());
+
+                decimal total     = Num(cab, "total");
+                decimal pagado    = Num(cab, "pagado");
+                decimal pendiente = Num(cab, "pendiente");
+                decimal inicial   = Num(cab, "pago_inicial");
+
+                lines.Add(RightPair("TOTAL:", Cop(total)));
+                if (inicial > 0)
+                    lines.Add(RightPair("Pago inicial:", Cop(inicial)));
+                lines.Add(RightPair("Pagado:", Cop(pagado)));
+                if (pendiente > 0)
+                    lines.Add(RightPair("Pendiente:", Cop(pendiente)));
+                lines.Add(RightPair("Forma pago:", cab["forma_pago"].ToString()!));
+
+                lines.Add(Sep());
+                lines.Add(Center("Recibo de compra"));
+                lines.Add("");
+                lines.Add("");
+
+                Imprimir(lines);
+                Log($"[COMPRA] id={idCompra} proveedor={cab["proveedor"]} total={Cop(total)} → OK impresora={_nombreImpresora}");
+            }
+            catch (Exception ex)
+            {
+                Log($"[COMPRA] id={idCompra} → ERROR: {ex.Message}");
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // Comprobante de abono a proveedor
+        // ----------------------------------------------------------------
+        public void ImprimirAbonoCompra(decimal idxCompra, decimal idxUsuario)
+        {
+            try
+            {
+                decimal idDetalle = _reportes.GetUltimoAbonoCompra(idxCompra, idxUsuario);
+                if (idDetalle == 0)
+                {
+                    Log($"[ABONO-COMPRA] idxCompra={idxCompra} idxUsuario={idxUsuario} → SIN DETALLE (GetUltimoAbonoCompra devolvio 0)");
+                    return;
+                }
+
+                var dt = _reportes.GetDetalleAbonoCompra(idDetalle);
+                if (dt.Rows.Count == 0)
+                {
+                    Log($"[ABONO-COMPRA] idxCompra={idxCompra} idDetalle={idDetalle} → SIN DATOS en SP_DETALLE_ABONO_COMPRA");
+                    return;
+                }
+
+                var d     = dt.Rows[0];
+                var lines = new List<string>();
+
+                lines.Add(Center(_nombreEmpresa));
+                lines.Add(Center("Comprobante de Abono a Proveedor"));
+                lines.Add(Center(Val(d, "fecha_abono")));
+                lines.Add(Sep());
+
+                lines.Add(RightPair("Compra #:", Val(d, "id_compra")));
+                lines.Add($"Proveedor: {d["proveedor"]}");
+                lines.Add($"Tel: {Val(d, "telefono_proveedor")}");
+                lines.Add(Sep());
+
+                lines.Add(RightPair("Total compra:", Cop(Num(d, "total_compra"))));
+                lines.Add(RightPair("Total pagado:", Cop(Num(d, "pagado_total"))));
+                lines.Add(Sep());
+
+                lines.Add(RightPair("Abono realizado:", Cop(Num(d, "valor_abonado"))));
+                lines.Add(RightPair("Forma pago:", Val(d, "forma_pago")));
+
+                decimal saldo = Num(d, "saldo_restante");
+                lines.Add(saldo > 0
+                    ? RightPair("Saldo restante:", Cop(saldo))
+                    : RightPair("Estado:", "PAGADO EN TOTAL"));
+
+                lines.Add(Sep());
+                lines.Add(RightPair("Registrado por:", Val(d, "usuario")));
+
+                string? comentario = d["comentario"] == DBNull.Value ? null : d["comentario"]?.ToString();
+                if (!string.IsNullOrEmpty(comentario))
+                    lines.Add($"Obs: {comentario}");
+
+                lines.Add(Center("Comprobante de pago"));
+                lines.Add("");
+                lines.Add("");
+
+                Imprimir(lines);
+                Log($"[ABONO-COMPRA] idxCompra={idxCompra} idDetalle={idDetalle} proveedor={d["proveedor"]} abono={Cop(Num(d, "valor_abonado"))} → OK impresora={_nombreImpresora}");
+            }
+            catch (Exception ex)
+            {
+                Log($"[ABONO-COMPRA] idxCompra={idxCompra} idxUsuario={idxUsuario} → ERROR: {ex.Message}");
+            }
+        }
+
+        // ----------------------------------------------------------------
         // Envio a impresora via System.Drawing.Printing
         // ----------------------------------------------------------------
         private void Imprimir(List<string> lines)
@@ -200,7 +344,7 @@ namespace INFRA.MMms.Services
 
                 doc.PrintPage += (_, e) =>
                 {
-                    using var font = new Font("Courier New", 8f, FontStyle.Regular, GraphicsUnit.Point);
+                    using var font = new Font("Courier New", 9f, FontStyle.Bold, GraphicsUnit.Point);
                     float lineH = font.GetHeight(e.Graphics);
                     float x = e.PageBounds.Left + 4;
                     float y = e.PageBounds.Top + 4;

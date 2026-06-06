@@ -252,6 +252,93 @@ namespace INFRA.MMms.Repository
         }
 
         // ----------------------------------------------------------------
+        // SP_ULTIMA_COMPRA_USUARIO — ID de la ultima compra por usuario
+        // ----------------------------------------------------------------
+        public decimal GetUltimaCompraUsuario(decimal idxUsuario)
+        {
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_ULTIMA_COMPRA_USUARIO", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@idx_usuario", SqlDbType.Decimal).Value = idxUsuario;
+
+                    connection.Open();
+                    object result = command.ExecuteScalar();
+                    return result != null ? Convert.ToDecimal(result) : 0;
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // SP_DETALLE_COMPRA — recibo de compra (cabecera + lineas)
+        // ----------------------------------------------------------------
+        public DataSet GetDetalleCompra(decimal idCompra)
+        {
+            DataSet result = new DataSet();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_DETALLE_COMPRA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@id_compra", SqlDbType.Decimal).Value = idCompra;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        // ----------------------------------------------------------------
+        // SP_ULTIMO_ABONO_COMPRA — ID del abono de compra mas reciente
+        // ----------------------------------------------------------------
+        public decimal GetUltimoAbonoCompra(decimal idxCompra, decimal idxUsuario)
+        {
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_ULTIMO_ABONO_COMPRA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@idx_compra",  SqlDbType.Decimal).Value = idxCompra;
+                    command.Parameters.Add("@idx_usuario", SqlDbType.Decimal).Value = idxUsuario;
+
+                    connection.Open();
+                    object result = command.ExecuteScalar();
+                    return result != null ? Convert.ToDecimal(result) : 0;
+                }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // SP_DETALLE_ABONO_COMPRA — comprobante de abono a proveedor
+        // ----------------------------------------------------------------
+        public DataTable GetDetalleAbonoCompra(decimal idDetalle)
+        {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_DETALLE_ABONO_COMPRA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@id_detalle", SqlDbType.Decimal).Value = idDetalle;
+
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
+        }
+
+        // ----------------------------------------------------------------
         // SP_BALANCE_DIARIO_IMPRIMIBLE
         // @fecha_inicio / @fecha_fin — rango libre
         // Retorna 5 result sets: ventas, compras, gastos, abonos ventas, abonos compras

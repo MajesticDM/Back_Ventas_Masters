@@ -5,6 +5,7 @@ using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace API.MMms.Controllers
 {
@@ -15,10 +16,13 @@ namespace API.MMms.Controllers
     {
         private readonly ICompras _context;
         private readonly IMapper _mapper;
-        public ComprasController(ICompras context, IMapper mapper)
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public ComprasController(ICompras context, IMapper mapper, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _mapper = mapper;
+            _scopeFactory = scopeFactory;
         }
 
         [HttpGet]
@@ -54,9 +58,34 @@ namespace API.MMms.Controllers
 
         [HttpPost("Comprar")]
         public async Task<IActionResult> Comprar(CompraDTO cuerpo)
-            {
+        {
             var resultado = _context.generarCompra(cuerpo);
+
+            decimal idxUsuario = cuerpo.usuario ?? 0;
+            if (idxUsuario > 0)
+                _ = Task.Run(() =>
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var reportes = scope.ServiceProvider.GetRequiredService<IReportes>();
+                    var print    = scope.ServiceProvider.GetRequiredService<IPrintService>();
+                    decimal idCompra = reportes.GetUltimaCompraUsuario(idxUsuario);
+                    if (idCompra > 0) print.ImprimirCompra(idCompra);
+                });
+
             return Ok(resultado);
+        }
+
+        [HttpGet("ImprimirCompra/{id}")]
+        public async Task<IActionResult> ImprimirCompra(decimal id)
+        {
+            decimal idDec = id;
+            _ = Task.Run(() =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var print = scope.ServiceProvider.GetRequiredService<IPrintService>();
+                print.ImprimirCompra(idDec);
+            });
+            return Ok();
         }
 
         [HttpGet("Compras")]

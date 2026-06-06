@@ -21,5 +21,6 @@ namespace CORE.MMms.Entidades
         public string? usuariO_ID {  get; set; }
         public string? datoS_PERSONALES_ID {  get; set; }
         public string? rutaFoto { get; set; }
+        public decimal idX_PERFIL { get; set; }
     }
 }

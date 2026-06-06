@@ -123,7 +123,7 @@ namespace INFRA.MMms.Repository
                     item.producto,
                     item.productoNombre,
                     item.existente,
-                    item.cantidad,
+                    item.gramaje_total,
                     item.costoUnidad,
                     item.costoTotal,
                     item.categoriaId,

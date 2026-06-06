@@ -1,7 +1,9 @@
 ﻿using CORE.MMms.Entidades;
 using CORE.MMms.Interfaces;
 using INFRA.MMms.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace INFRA.MMms.Repository
 {
@@ -50,6 +52,23 @@ namespace INFRA.MMms.Repository
 
             int rows = await _context.SaveChangesAsync();
             return rows > 0;
+        }
+
+
+        public async Task<DataTable> CargarCategorias() {
+            DataTable result = new DataTable();
+
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_CARGAR_CATEGORIAS", connection))
+                {
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    adapter.Fill(result);
+                }
+            }
+
+            return result;
         }
     }
 }

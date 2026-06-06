@@ -36,5 +36,17 @@ namespace CORE.MMms.Interfaces
 
         // Detalle completo de un abono para imprimir el comprobante
         DataTable GetDetalleAbono(decimal idDetalle);
+
+        // ID de la compra mas reciente de un usuario (para imprimir recibo justo despues de crear)
+        decimal GetUltimaCompraUsuario(decimal idxUsuario);
+
+        // Recibo de compra: cabecera + lineas de productos
+        DataSet GetDetalleCompra(decimal idCompra);
+
+        // ID del abono de compra mas reciente para una compra (para imprimir comprobante)
+        decimal GetUltimoAbonoCompra(decimal idxCompra, decimal idxUsuario);
+
+        // Detalle completo de un abono de compra para imprimir el comprobante
+        DataTable GetDetalleAbonoCompra(decimal idDetalle);
     }
 }

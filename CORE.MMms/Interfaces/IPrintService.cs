@@ -7,5 +7,11 @@ namespace CORE.MMms.Interfaces
 
         /// <summary>Imprime el comprobante del abono más reciente de una factura.</summary>
         void ImprimirAbono(decimal idxFactura, decimal idxUsuario);
+
+        /// <summary>Imprime el recibo de una compra en la impresora configurada.</summary>
+        void ImprimirCompra(decimal idCompra);
+
+        /// <summary>Imprime el comprobante del abono de compra más reciente.</summary>
+        void ImprimirAbonoCompra(decimal idxCompra, decimal idxUsuario);
     }
 }

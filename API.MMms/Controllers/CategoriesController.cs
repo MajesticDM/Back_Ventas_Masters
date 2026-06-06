@@ -4,6 +4,7 @@ using CORE.MMms.Entidades;
 using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
 
 namespace API.MMms.Controllers
 {
@@ -26,6 +27,13 @@ namespace API.MMms.Controllers
             var MMDS = await _context.GetCategories();
             var MMD = _mapper.Map<IEnumerable<CategoriaDTOs>>(MMDS);
             return Ok(MMD);
+        }
+
+        [HttpGet("GetCategorias")]
+        public async Task<IActionResult> GetCategorias()
+        {
+            var categorias = _context.CargarCategorias();
+            return Ok(categorias);
         }
 
         [HttpGet("{id}")]
