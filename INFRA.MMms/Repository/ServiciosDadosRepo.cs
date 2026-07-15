@@ -56,6 +56,8 @@ namespace INFRA.MMms.Repository
                     command.Parameters.Add("@forma_pago_inicial", SqlDbType.Decimal).Value = dto.idx_forma_pago_pago_inicial;
                     command.Parameters.Add("@pago_inicial", SqlDbType.Decimal).Value = dto.valoR_PAGADO;
                     command.Parameters.Add("@usa_saldo_favor", SqlDbType.Bit).Value = dto.uso_saldo_favor;
+                    command.Parameters.Add("@se_recibe",      SqlDbType.Decimal).Value = dto.se_recibe;
+                    command.Parameters.Add("@se_devuelve",    SqlDbType.Decimal).Value = dto.se_devuelve;
 
                     idFactura = Convert.ToDecimal(command.ExecuteScalar());
                 }

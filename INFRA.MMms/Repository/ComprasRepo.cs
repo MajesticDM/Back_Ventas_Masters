@@ -51,6 +51,31 @@ namespace INFRA.MMms.Repository
         {
             return cargarCompras();
         }
+
+        public (bool ok, string mensaje) AnularCompra(int idCompra)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(_context.Database.GetDbConnection().ConnectionString))
+                using (SqlCommand command = new SqlCommand("SP_ANULAR_COMPRA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.Add("@id_compra", SqlDbType.Decimal).Value = idCompra;
+
+                    connection.Open();
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return (true, reader["mensaje"]?.ToString() ?? "Compra anulada.");
+                    }
+                }
+                return (true, "Compra anulada.");
+            }
+            catch (SqlException ex)
+            {
+                return (false, ex.Message);
+            }
+        }
         private DataTable cargarCompras()
         {
             DataTable dt = new DataTable();

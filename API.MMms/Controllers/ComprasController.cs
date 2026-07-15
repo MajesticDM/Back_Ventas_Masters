@@ -65,5 +65,14 @@ namespace API.MMms.Controllers
             var resultado = _context.cargarComprasParaSelect();
             return Ok(resultado);
         }
+
+        [HttpPut("Anular/{id}")]
+        public IActionResult Anular(int id)
+        {
+            var (ok, mensaje) = _context.AnularCompra(id);
+            if (!ok)
+                return BadRequest(new { message = mensaje });
+            return Ok(new { message = mensaje });
+        }
     }
 }
