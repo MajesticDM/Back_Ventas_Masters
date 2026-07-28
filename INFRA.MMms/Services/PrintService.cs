@@ -2,6 +2,7 @@ using CORE.MMms.Interfaces;
 using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Drawing.Printing;
 using System.Globalization;
 
@@ -13,10 +14,20 @@ namespace INFRA.MMms.Services
         private static readonly CultureInfo CulCO = new CultureInfo("es-CO");
         private static readonly object _logLock = new object();
 
+        private static readonly ColorMatrix GrayscaleMatrix = new ColorMatrix(new float[][]
+        {
+            new float[] {0.299f, 0.299f, 0.299f, 0, 0},
+            new float[] {0.587f, 0.587f, 0.587f, 0, 0},
+            new float[] {0.114f, 0.114f, 0.114f, 0, 0},
+            new float[] {0,      0,      0,      1, 0},
+            new float[] {0,      0,      0,      0, 1}
+        });
+
         private readonly IReportes _reportes;
         private readonly string _nombreEmpresa;
         private readonly string _nombreImpresora;
         private readonly string _logPath;
+        private readonly string _logoPath;
 
         public PrintService(IReportes reportes, IConfiguration config)
         {
@@ -24,6 +35,7 @@ namespace INFRA.MMms.Services
             _nombreEmpresa   = config["PrintSettings:NombreEmpresa"]   ?? "VENTAS MASTERS";
             _nombreImpresora = config["PrintSettings:NombreImpresora"] ?? "HP Laser MFP 135w";
             _logPath         = config["PrintSettings:LogPath"]         ?? "print.log";
+            _logoPath        = config["PrintSettings:LogoPath"]        ?? "";
         }
 
         // ----------------------------------------------------------------
@@ -46,6 +58,12 @@ namespace INFRA.MMms.Services
                 var lines = new List<string>();
 
                 lines.Add(Center(_nombreEmpresa));
+
+                lines.Add(Center("Carrera 53 # 47 - 21, Local 109"));
+                lines.Add(Center("C.C Luz del Dia"));
+                lines.Add(Center("CEL 323 491 3454"));
+                lines.Add(Center("NIT 901838998-0"));
+
                 lines.Add(Center($"Factura #{cab["id_factura"]} - {cab["fecha_venta"]}"));
                 lines.Add(Sep());
 
@@ -110,7 +128,7 @@ namespace INFRA.MMms.Services
                 lines.Add("");
                 lines.Add("");
 
-                Imprimir(lines);
+                Imprimir(lines, conLogo: true);
                 Log($"[FACTURA] id={idFactura} cliente={cab["cliente"]} total={Cop(total)} → OK impresora={_nombreImpresora}");
             }
             catch (Exception ex)
@@ -144,11 +162,17 @@ namespace INFRA.MMms.Services
                 var lines = new List<string>();
 
                 lines.Add(Center(_nombreEmpresa));
+
+                lines.Add(Center("Carrera 53 # 47 - 21, Local 109"));
+                lines.Add(Center("C.C Luz del Día"));
+                lines.Add(Center("CEL 323 491 3454"));
+                lines.Add(Center("NIT 901838998-0"));
+
                 lines.Add(Center("Comprobante de Abono"));
                 lines.Add(Center(Val(d, "fecha_abono")));
                 lines.Add(Sep());
 
-                lines.Add(RightPair("Factura #:", Val(d, "id_factura")));
+                lines.Add($"Factura #: {d["id_factura"]}");
                 lines.Add($"Cliente: {d["cliente"]}");
                 lines.Add($"Tel: {Val(d, "telefono_cliente")}");
                 lines.Add($"ID: {Val(d, "identificacion_cliente")}");
@@ -177,7 +201,7 @@ namespace INFRA.MMms.Services
                 lines.Add("");
                 lines.Add("");
 
-                Imprimir(lines);
+                Imprimir(lines, conLogo: true);
                 Log($"[ABONO] idxFactura={idxFactura} idDetalle={idDetalle} cliente={d["cliente"]} abono={Cop(Num(d, "valor_abonado"))} → OK impresora={_nombreImpresora}");
             }
             catch (Exception ex)
@@ -206,6 +230,12 @@ namespace INFRA.MMms.Services
                 var lines = new List<string>();
 
                 lines.Add(Center(_nombreEmpresa));
+
+                lines.Add(Center("Carrera 53 # 47 - 21, Local 109"));
+                lines.Add(Center("C.C Luz del Dia"));
+                lines.Add(Center("CEL 323 491 3454"));
+                lines.Add(Center("NIT 901838998-0"));
+
                 lines.Add(Center($"Compra #{cab["id_compra"]} - {cab["fecha_compra"]}"));
                 lines.Add(Sep());
 
@@ -255,7 +285,7 @@ namespace INFRA.MMms.Services
                 lines.Add("");
                 lines.Add("");
 
-                Imprimir(lines);
+                Imprimir(lines, conLogo: true);
                 Log($"[COMPRA] id={idCompra} proveedor={cab["proveedor"]} total={Cop(total)} → OK impresora={_nombreImpresora}");
             }
             catch (Exception ex)
@@ -289,6 +319,12 @@ namespace INFRA.MMms.Services
                 var lines = new List<string>();
 
                 lines.Add(Center(_nombreEmpresa));
+
+                lines.Add(Center("Carrera 53 # 47 - 21, Local 109"));
+                lines.Add(Center("C.C Luz del Dia"));
+                lines.Add(Center("CEL 323 491 3454"));
+                lines.Add(Center("NIT 901838998-0"));
+
                 lines.Add(Center("Comprobante de Abono a Proveedor"));
                 lines.Add(Center(Val(d, "fecha_abono")));
                 lines.Add(Sep());
@@ -321,7 +357,7 @@ namespace INFRA.MMms.Services
                 lines.Add("");
                 lines.Add("");
 
-                Imprimir(lines);
+                Imprimir(lines, conLogo: true);
                 Log($"[ABONO-COMPRA] idxCompra={idxCompra} idDetalle={idDetalle} proveedor={d["proveedor"]} abono={Cop(Num(d, "valor_abonado"))} → OK impresora={_nombreImpresora}");
             }
             catch (Exception ex)
@@ -333,8 +369,10 @@ namespace INFRA.MMms.Services
         // ----------------------------------------------------------------
         // Envio a impresora via System.Drawing.Printing
         // ----------------------------------------------------------------
-        private void Imprimir(List<string> lines)
+        private void Imprimir(List<string> lines, bool conLogo = false)
         {
+            using var logo = conLogo ? CargarLogo() : null;
+
             for (int copia = 0; copia < 2; copia++)
             {
                 var capturedLines = lines;
@@ -349,6 +387,9 @@ namespace INFRA.MMms.Services
                     float x = e.PageBounds.Left + 4;
                     float y = e.PageBounds.Top + 4;
 
+                    if (logo != null)
+                        y = DibujarLogoCentrado(e.Graphics, e.PageBounds, logo, y + 12);
+
                     foreach (var line in capturedLines)
                     {
                         e.Graphics.DrawString(line, font, Brushes.Black, x, y);
@@ -360,6 +401,48 @@ namespace INFRA.MMms.Services
 
                 doc.Print();
             }
+        }
+
+        // ----------------------------------------------------------------
+        // Logo de la empresa: cargado desde PrintSettings:LogoPath,
+        // impreso centrado y en blanco y negro (escala de grises).
+        // ----------------------------------------------------------------
+        private Bitmap? CargarLogo()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_logoPath) || !File.Exists(_logoPath))
+                    return null;
+
+                byte[] bytes = File.ReadAllBytes(_logoPath);
+                using var ms = new MemoryStream(bytes);
+                return new Bitmap(ms);
+            }
+            catch (Exception ex)
+            {
+                Log($"[LOGO] No se pudo cargar '{_logoPath}': {ex.Message}");
+                return null;
+            }
+        }
+
+        private static float DibujarLogoCentrado(Graphics graphics, Rectangle pageBounds, Bitmap logo, float y)
+        {
+            float maxWidth = Math.Max(1, pageBounds.Width - 8);
+            float scale = Math.Min(1f, maxWidth / logo.Width);
+            float imgWidth = logo.Width * scale;
+            float imgHeight = logo.Height * scale;
+            float imgX = pageBounds.Left + (pageBounds.Width - imgWidth) / 2f;
+
+            using var attributes = new ImageAttributes();
+            attributes.SetColorMatrix(GrayscaleMatrix);
+
+            graphics.DrawImage(
+                logo,
+                new Rectangle((int)imgX, (int)y, (int)imgWidth, (int)imgHeight),
+                0, 0, logo.Width, logo.Height,
+                GraphicsUnit.Pixel, attributes);
+
+            return y + imgHeight + 30;
         }
 
         // ----------------------------------------------------------------
@@ -391,7 +474,7 @@ namespace INFRA.MMms.Services
             return text.PadLeft(text.Length + pad);
         }
 
-        private static string Sep() => new string('-', LineWidth);
+        private static string Sep() => new string('_', LineWidth);
 
         private static string RightPair(string label, string value)
         {

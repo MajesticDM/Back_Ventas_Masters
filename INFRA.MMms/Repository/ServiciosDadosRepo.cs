@@ -77,6 +77,28 @@ namespace INFRA.MMms.Repository
                     }
                 }
 
+                foreach (var servicio in dto.servicios)
+                {
+                    using (SqlCommand command = new SqlCommand("SP_FACTURAS_ACCIONES", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.Add("@accion", SqlDbType.VarChar, 100).Value = "venderServicio";
+                        command.Parameters.Add("@id_factura", SqlDbType.Decimal).Value = idFactura;
+                        command.Parameters.Add("@idx_servicio", SqlDbType.Decimal).Value = servicio.IdxServicio;
+                        command.Parameters.Add("@cliente_dejo_llaves", SqlDbType.Bit).Value = servicio.ClienteDejoLlaves;
+                        command.Parameters.Add("@descripcion_llaves", SqlDbType.VarChar, 100).Value = (object?)servicio.DescripcionLlaves ?? DBNull.Value;
+                        command.Parameters.Add("@bit_vehiculo_inicial", SqlDbType.Bit).Value = (object?)servicio.BitVehiculoInicial ?? DBNull.Value;
+                        command.Parameters.Add("@placa_vehiculo", SqlDbType.VarChar, 15).Value = (object?)servicio.PlacaVehiculo ?? DBNull.Value;
+                        command.Parameters.Add("@color_vehiculo", SqlDbType.VarChar, 100).Value = (object?)servicio.ColorVehiculo ?? DBNull.Value;
+                        command.Parameters.Add("@marca_vehiculo", SqlDbType.VarChar, 15).Value = (object?)servicio.MarcaVehiculo ?? DBNull.Value;
+                        command.Parameters.Add("@costo_adicional", SqlDbType.Float).Value = (object?)servicio.CostoAdicional ?? DBNull.Value;
+                        command.Parameters.Add("@costo_total", SqlDbType.Decimal).Value = servicio.TotalCost;
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+
                 using (SqlCommand command = new SqlCommand("SP_FACTURAS_ACCIONES", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;

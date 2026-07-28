@@ -12,7 +12,7 @@ namespace CORE.MMms.Entidades
         public decimal idX_FORMA_PAGO { get; set; }
         public decimal idx_forma_pago_pago_inicial { get; set; }
         public bool uso_saldo_favor { get; set; }
-        public List<ServiciosDadoDTOs> servicios { get; set; }
+        public List<ServicioFacturaDto> servicios { get; set; }
         public List<VendidoProductoDTOs> productos { get; set; }
     }
 }
