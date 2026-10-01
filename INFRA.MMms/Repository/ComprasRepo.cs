@@ -51,6 +51,24 @@ namespace INFRA.MMms.Repository
         {
             return cargarCompras();
         }
+
+        public void AnularCompra(int idCompra, int idUsuario)
+        {
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                using (SqlCommand command = new SqlCommand("SP_ANULAR_COMPRA", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@id_compra", SqlDbType.Decimal).Value = idCompra;
+                    command.Parameters.Add("@idx_usuario", SqlDbType.Decimal).Value = idUsuario;
+
+                    connection.Open();
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
         private DataTable cargarCompras()
         {
             DataTable dt = new DataTable();

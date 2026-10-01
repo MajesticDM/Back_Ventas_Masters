@@ -238,5 +238,25 @@ namespace INFRA.MMms.Repository
             int rows = await _context.SaveChangesAsync();
             return rows > 0;
         }
+
+        public void AnularFactura(int idFactura, int idUsuario)
+        {
+            using (SqlConnection connection = new SqlConnection(
+                _context.Database.GetDbConnection().ConnectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand command = new SqlCommand("SP_FACTURAS_ACCIONES", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.Add("@accion", SqlDbType.VarChar, 100).Value = "anularFactura";
+                    command.Parameters.Add("@id_factura", SqlDbType.Decimal).Value = idFactura;
+                    command.Parameters.Add("@idx_usuario", SqlDbType.Decimal).Value = idUsuario;
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
     }
 }

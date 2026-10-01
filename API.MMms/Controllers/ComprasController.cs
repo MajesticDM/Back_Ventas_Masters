@@ -4,6 +4,7 @@ using CORE.MMms.Entidades;
 using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using System.Data;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -93,6 +94,20 @@ namespace API.MMms.Controllers
         {
             var resultado = _context.cargarComprasParaSelect();
             return Ok(resultado);
+        }
+
+        [HttpPut("AnularCompra/{id}/{idUsuario}")]
+        public IActionResult AnularCompra(int id, int idUsuario)
+        {
+            try
+            {
+                _context.AnularCompra(id, idUsuario);
+                return Ok();
+            }
+            catch (SqlException ex)
+            {
+                return Conflict(ex.Message);
+            }
         }
     }
 }

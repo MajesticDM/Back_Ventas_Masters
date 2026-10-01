@@ -4,6 +4,7 @@ using CORE.MMms.Entidades;
 using CORE.MMms.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace API.MMms.Controllers
@@ -76,6 +77,20 @@ namespace API.MMms.Controllers
         {
            bool respuesta = await _context.Update(Id, estado);
             return Ok(respuesta);
+        }
+
+        [HttpPut("AnularFactura/{id}/{idUsuario}")]
+        public IActionResult AnularFactura(int id, int idUsuario)
+        {
+            try
+            {
+                _context.AnularFactura(id, idUsuario);
+                return Ok();
+            }
+            catch (SqlException ex)
+            {
+                return Conflict(ex.Message);
+            }
         }
 
         [HttpGet("ImprimirFactura/{id}")]

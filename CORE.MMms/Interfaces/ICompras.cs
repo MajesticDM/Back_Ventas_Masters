@@ -11,5 +11,6 @@ namespace CORE.MMms.Interfaces
         Task Post(Compra MMD);
         string generarCompra(CompraDTO cuerpoCompra);
         DataTable cargarComprasParaSelect();
+        void AnularCompra(int idCompra, int idUsuario);
     }
 }
